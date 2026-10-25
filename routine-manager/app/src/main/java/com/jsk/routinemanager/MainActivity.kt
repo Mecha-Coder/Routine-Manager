@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                 val screen by viewModel.screen.collectAsStateWithLifecycle()
                 when (screen) {
                     Screen.Home -> HomeScreen(
-                        viewModel.dashboard,
+                        viewModel,
                         onSettings = {}, // Settings comes in M8.
                         onDebug = if (DebugEntry.AVAILABLE) ({ viewModel.show(Screen.Debug) }) else null,
                     )

@@ -10,7 +10,7 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 2. Read [design/README.md](../design/README.md), [SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md) and this milestone.
 3. Build only this milestone's scope. If it won't fit in one session, stop at a working point, split the rest into M<n>b here, and say so.
 4. Pass the **quality gate** in [CLAUDE.md](../CLAUDE.md) and every acceptance criterion below. The last step is always "Install on the phone and verify", except in M13, which changes no app code.
-5. Update the status table, add notes under the milestone if something was learned or changed, and ask the owner before committing (`M<n>: <summary>`).
+5. Update the status table, add notes under the milestone if something was learned or changed, and commit (`M<n>: <summary>`) and push; the owner doesn't need to be asked first.
 
 ## Status
 
@@ -19,14 +19,14 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 | M1 Foundation: window, theme, font, icons | Done |
 | M2 Data, routine logic, minute clock | Done |
 | M3 Dashboard and debug screen | Done |
-| M4 Night and power | Not started |
-| M5 List menu, list view mode, portrait | Not started |
+| M4 Night and power | Done |
+| M5 List menu, list view mode, portrait | Done |
 | M6 List edit mode | Not started |
 | M7 Drag: indent and reorder | Not started |
 | M8 Settings and sound | Not started |
 | M9 Weekly timetable | Not started |
 | M10 Block editor dialog | Not started |
-| M11 App icon | Not started |
+| M11 App icon | Done |
 | M12 Release APK and install guide | Not started |
 | M13 User guide (README) and browser demo | Not started |
 
@@ -202,7 +202,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [x] From Mon 05:58 at 60×: at 06:00 brightness and the chosen theme return.
 - [x] Battery rule, using `adb shell dumpsys battery unplug` and `adb shell dumpsys battery set level 10`: the screen times out after 2 minutes. After `adb shell dumpsys battery reset`, it stays on again. Always run the reset. (Screen-off itself interrupted by a touch; evidence accepted by the supervisor, see notes.)
 - [x] Tune `BEDTIME_BRIGHTNESS` with the owner in a dark room; record the value in the notes. (0.05, owner.)
-- [ ] 30-minute memory check.
+- [x] 30-minute memory check.
 
 **Notes**
 - **Code:** `domain/ScreenRules.kt` holds the decisions (`keepScreenOn`, `dim`, `darkPalette`); `screen/ScreenPolicy.kt` applies them to the window. `MainActivity` feeds it `MainViewModel.routine` while STARTED, and `dispatchTouchEvent` asks it first.
@@ -222,6 +222,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
   - Idle redraw, live clock, 21:06:20–21:09:20: 3 framestats frames, 60.01 s and 60.00 s apart ("Total frames rendered" 6, M2 note).
   - Battery rule: `unplug` + `set level 10` at 21:11:03 → `FLAG_KEEP_SCREEN_ON` cleared at the 21:12:00 tick; `reset` at 21:12:04 → back at the 21:13:00 tick, and the screen was still `Awake` at 21:15:34, 3.5 min after the last touch. Second run: level 10 at 21:18:22, flag cleared at the 21:19:00 tick; the system started its pre-timeout dim at 21:20:40 (`policy=DIM`). **The timeout counts from the tick that clears the flag, not from the last touch:** the window wake lock is ON_AFTER_RELEASE, so its release counts as user activity. A real touch at 21:20:50 (someone using the phone) woke it about 10 s before screen-off, so the screen-off itself was not observed; the supervisor accepted this evidence without a rerun. `dumpsys battery reset` ran at 21:21:43.
   - No crashes, no ANRs.
+- **Gate (25 Oct 2026, on `main` with M4, M5 and M11 merged):** clean `assembleDebug lintDebug testDebugUnitTest assembleRelease` passes (80 tests, 0 failures; lint 0 errors, the 2 accepted warnings). Fake Mon 11:12 PM: `Display Brightness=0.05` with our activity's override, dark palette on the dashboard and the list menu; back on Live the brightness returns to `automatic`. No crashes or ANRs. Memory, 30 minutes (22:07–22:37): 95,085 KB at minute 5, 92,440 KB at minute 30, flat. Idle redraw untouched (22:11–22:14): 3 framestats frames ("Total frames rendered" 6). An earlier count that started 11 s after leaving the debug screen and Bedtime caught a one-off burst (252 frames, mostly in its first seconds); the cause wasn't found. The M12 24-hour run should show whether anything like it repeats.
 
 ---
 
@@ -238,13 +239,52 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - Portrait layout: the list panel at full width. Navigation state and system Back.
 
 **Acceptance criteria**
-- [ ] Unit tests: numbering (`1)`, `2)`, `2.1)`, child counter restarts under each parent); To-Do badge counts not-done items at all levels; Grocery badge counts selected items in all categories.
+- [x] Unit tests: numbering (`1)`, `2)`, `2.1)`, child counter restarts under each parent); To-Do badge counts not-done items at all levels; Grocery badge counts selected items in all categories.
 
 **Install on the phone and verify**
-- [ ] Ticking a to-do and selecting a grocery item update the badges and survive a force-stop.
-- [ ] A collapsed category stays collapsed after a force-stop.
-- [ ] Rotating to portrait with a list open keeps it open; rotating back too.
-- [ ] Back goes from a list to the menu.
+- [x] Ticking a to-do and selecting a grocery item update the badges and survive a force-stop.
+- [x] A collapsed category stays collapsed after a force-stop.
+- [x] Rotating to portrait with a list open keeps it open; rotating back too.
+- [x] Back goes from a list to the menu.
+
+**Notes**
+- **Unit tests:** 71 (16 new): `NumberingTest` 6, `OutlineOpsTest` 4, `GroceryOpsTest` 5, `MenuBadgesTest` 1. Lint: 0 errors, the 2 accepted M1 warnings.
+- **Where things are:**
+  - `domain/`:
+    - `Numbering.labels`.
+    - `OutlineOps.openCount` and `toggleDone`. M6 adds the edit operations here.
+    - `GroceryOps.selectedCount` (all categories, or one), `toggle` and `toggleCollapsed`.
+  - `MainViewModel` holds:
+    - the open list (`openList`, with `showList` and `showMenu`): kept through rotation, not saved;
+    - `badges` (`MenuBadges`);
+    - the three view-mode actions.
+  - `HomeScreen` now takes the ViewModel. Its private `ListPanel` shows either `ListMenu` or `ui/lists/ListDetail` (`OutlineList`, `GroceryList`), and holds the `BackHandler` while a list is open.
+  - Shared pieces: `CountBadge`, `RadioDot` (also for M8's tone rows), `Modifier.bleed` (the prototype's negative horizontal margin, which M6's edit rows also use), `RmIconButton(iconSize)` (the Edit icon is 22 dp), `RmType.emptyState` (15 / 400) and `RmShapes.categoryHeader` (14).
+- **The Edit button does nothing until M6**, as the gear did until M8.
+- **Pressed tints:** no ripples, following the prototype.
+  - List menu rows: `surfacePressed` (README).
+  - Grocery category header: `surface`. The prototype's light hover tint `#f5f5f5`, drawn through its `brightness(.9)` filter, comes out as #DCDCDC, which is the README's `surface` (#DBDBDB). The tint reaches 10 dp past the text on both sides (`margin: 0 -10px` in the prototype).
+  - To-do rows and grocery items: no tint, as in the prototype. The strike-through or the dot is the feedback. They are `toggleable` (`Role.Checkbox`), so `uiautomator dump` shows `checked=`.
+- **Notch (SPEC §3.4):** list content uses max(design padding, 34 dp) on the notch side, like the header: the menu card's 22 dp and the list's 26 dp both become 34 dp.
+- **Empty state** ("Nothing here. Tap ✎ to add.") can't be seen on the phone until M6, because nothing in view mode removes items. Grocery follows the prototype: the line shows when no category has items, under any categories that are left.
+- **For M6/M7:** `uiautomator dump` reports rows shorter than 48 dp as up to 48 dp tall, with the top up to 2 dp higher (accessibility touch bounds). Take positions from the text nodes.
+- **Phone, 25 Oct (debug build, landscape, notch on the right):**
+  - Compared with the prototype in Chrome (`temp/screenshot/m5-proto-*.png` against `m5-phone-*.png`), in dp from the list pane's left edge:
+    - To-Do numbers at x 32.2 and 56.2, text at 56.2 and 95.1 (prototype 32 / 56 / 56 / 95.1);
+    - the first line of text at y 85.3 (85.2);
+    - the title at y 27.7 (27.5);
+    - Grocery headers at x 19.9, y 74.1 and 220.3 (20, 74, 220); chevron at x 30.1, name at x 59.9, item text at x 94.1 (30 / 60 / 94).
+  - Ticking "Clean room" (a parent) and "Itinerary" (a child) took the To-Do badge from 4 to 2. Selecting "Egg" took Grocery from 1 to 2. Collapsing "Food" kept its badge at 1.
+  - Force-stop and relaunch: `app_data.json` held the ticks, the selection and `"collapsed": true`. Both badges still showed 2, and Food was still collapsed.
+  - Back works both ways: the Back key goes from a list to the menu and the app stays on top; so does the header's back arrow.
+  - A screen recording of a held tap on the Food header shows the `surface` tint while it is pressed. After release, the chevron turns through intermediate frames for about 150–180 ms.
+  - Idle redraw with To-Do open, 21:57–22:00: 3 framestats frames, 60.0 s apart ("Total frames rendered" 6, since the phone counts each frame twice). The list panel adds no frames.
+  - Rotation. The supervisor rotated the display over adb, with `cmd window fixed-to-user-rotation enabled` and `cmd window user-rotation lock <n>`; the app still gets a normal configuration change. Afterwards the supervisor restored the defaults (auto-rotate off, the app following the sensor).
+    - To ROTATION_0 with To-Do open: To-Do stayed open with its ticks, at the full 384 dp width. The header sits at 34 dp because of the top notch (the design has 16). Rows have the design's 30 / 26 dp side padding, and the title is centred.
+    - In portrait: the menu, Self and Grocery all work. A tap on a Self item left `app_data.json` unchanged.
+    - Back to ROTATION_270 with Grocery open: Grocery stayed open in the right panel, with the clock panel beside it.
+    - Screenshots: `m5-phone-portrait-*.png` and `m5-phone-r270-grocery-after-rotation.png`.
+  - No crashes or ANRs during the checks. Afterwards the sample list state was restored (To-Do 4, Grocery 1, nothing collapsed), and the app was left on the live dashboard.
 
 ---
 

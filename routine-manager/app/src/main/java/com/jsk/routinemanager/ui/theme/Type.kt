@@ -84,6 +84,9 @@ object RmType {
 
     /** A selected grocery item. */
     val bodySelected = body.copy(fontWeight = FontWeight(700))
+
+    /** "Nothing here. Tap ✎ to add." (prototype: 15 / 400). */
+    val emptyState = style(15f, 400)
     val badge = style(13f, 600)
 
     /** List text buttons ("Add task", "Add item") and the "Add category" pill. */

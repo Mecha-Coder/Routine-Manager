@@ -53,7 +53,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D21 | Build order | M1, M2, then M3 (dashboard) with M11 (icon) beside it. After M3, two tracks run in parallel, each in its own git worktree: lists (M5 → M6 → M7) and power, settings and timetable (M4, M8 → M9 → M10). Builders take turns on the phone; the supervisor merges each milestone onto `main` after its gate and the owner's OK. Then M12 (release) and M13 (user guide). See [BUILD_PLAN.md](BUILD_PLAN.md). (Parallel tracks: owner, M2.) | Plan |
 | D22 | User guide | A root `README.md` walks through every feature with phone screenshots and links to the prototype on GitHub Pages so people can try it in a browser (M13). It lives on GitHub only; the app gets no help screen. | Adds |
 | D23 | Kotlin version | Kotlin **2.4.21**, up from the wizard's 2.2.10, so the serialization plugin and `kotlinx-serialization-json` can be current. The Compose compiler and serialization plugins use the same version. (Owner, M1.) | Adds |
-| D24 | App icon | Concept C: "07:05" in Google Sans Flex above the dashboard's progress bar. Release icon in the **light** palette (off-white `#E6E6E6`, black `#0F0F0F`, cobalt `#2952E6`). Debug icon uses the **dark** palette and adds a `bug_report` badge, also on the monochrome (themed) layer. (Owner, M11.) | Adds |
+| D24 | App icon | Concept C: "07:05" in Google Sans Flex above the dashboard's progress bar. The icon follows the phone's dark mode, inverted for contrast: phone in **dark** mode → **light** icon (off-white `#E6E6E6`, black `#0F0F0F`, cobalt `#2952E6`); phone in **light** mode → **dark** icon (black `#000000`, `#EDEDED`, mint `#4DE0A6`). Shape: the launcher's own rounded square, full-bleed background. (A round disc was tried: this phone's launcher keeps its squircle and fills the clear corners with black, so the owner chose the rounded square.) The debug icon is the same plus a `bug_report` badge, also on the monochrome (themed) layer. (Owner, M11; replaces the first choice of a fixed light release icon and a dark debug icon.) | Adds |
 
 ## 3. Detailed rules
 
@@ -72,7 +72,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 
 - **Bedtime** is the README's routine state: no current block and no Free-time gap, i.e. before the day's first block or after its last. A day with no blocks is Bedtime all day, so the screen is dim all day. The owner accepted this.
 - While Bedtime:
-  - The app overrides the window brightness to a fixed low value (constant `BEDTIME_BRIGHTNESS`; start at 0.05 and tune on the phone in M4). It is not a setting.
+  - The app overrides the window brightness to a fixed low value (constant `BEDTIME_BRIGHTNESS` = **0.05**, confirmed by the owner in a dark room in M4; this phone can't go below about 0.012 this way). It is not a setting.
   - The **dark palette** is used, whatever the Theme setting says.
   - The **first touch while dim is swallowed**: it restores normal brightness and does nothing else (no to-do is ticked, no button is pressed).
   - For **30 s after the last touch** the screen stays bright and touches work normally. Then it dims again.

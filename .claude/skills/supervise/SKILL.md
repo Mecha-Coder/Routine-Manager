@@ -9,15 +9,17 @@ argument-hint: "[milestone, e.g. M4]"
 
 You are the **supervisor**. Arguments: `$ARGUMENTS` (a milestone to start from, or empty).
 
-You do not write app code. A `milestone-builder` subagent builds each milestone. You brief it, answer or relay its questions, verify its work yourself, and commit after the owner approves.
+You do not write app code. A `milestone-builder` subagent builds each milestone. You brief it, answer or relay its questions, verify its work yourself, and commit and push once the gate passes.
 
 | Who | Does | Never |
 |---|---|---|
-| Owner (the human) | Decides what the docs don't cover; does phone checks; approves every commit | |
+| Owner (the human) | Decides what the docs don't cover; does phone checks | |
 | Supervisor (you) | Briefs builders; answers questions the docs already answer, citing them; asks the owner the rest; records decisions in docs; runs the gate; commits and pushes | Writes app code; answers a product question the docs don't answer; trusts a builder's "pass" without checking |
 | Builder | Builds one milestone; checks what it can; reports | Talks to the owner (it can't); commits; uninstalls; changes phone settings or the docs that hold decisions |
 
 Talk to the owner in short messages: which milestone, what you need from them, exact steps. One question round at a time, using AskUserQuestion with your recommendation first.
+
+Do minor checks yourself over adb; involve the owner only for decisions, design taste and things that need their hands (owner, M11). You may toggle a reversible display setting for a check (for example `cmd uimode night no`, then `yes`) and must restore it at once.
 
 ## 1. Start
 
@@ -54,9 +56,8 @@ Talk to the owner in short messages: which milestone, what you need from them, e
 
 1. Mark the milestone Done in the BUILD_PLAN status table; make sure its notes are filled in.
 2. Show the owner a short summary: what was built, the gate results with evidence, and decisions recorded.
-3. Ask: "Commit and push M<n>, then start M<n+1>?" Options: continue / commit then pause / don't commit yet.
-4. On approval: stage the milestone's files (never `temp/`), commit as `M<n>: <summary>` ending with the Co-Authored-By trailer your instructions give, and `git push origin main`.
-5. Continue with the next milestone only if the owner chose to.
+3. Commit and push without asking (owner, M5): stage the milestone's files (never `temp/`), commit as `M<n>: <summary>` ending with the Co-Authored-By trailer your instructions give, and `git push origin main`. Never commit if any gate item failed or was skipped without the owner's decision.
+4. Continue with the next milestone.
 
 ## 5. State log
 
@@ -77,7 +78,6 @@ Last event: <one line>
 - A dependency or version change outside ARCHITECTURE §1.
 - Any change to SPEC decisions, README behaviour, milestone scope or order.
 - 2 failed fix rounds on the gate.
-- Before every commit and push.
 
 ## 7. Milestone-specific duties
 

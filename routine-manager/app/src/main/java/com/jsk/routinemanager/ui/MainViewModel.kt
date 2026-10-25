@@ -6,15 +6,19 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jsk.routinemanager.RoutineApp
+import com.jsk.routinemanager.data.AppData
 import com.jsk.routinemanager.data.Block
 import com.jsk.routinemanager.data.DataRepository
 import com.jsk.routinemanager.domain.ClockText
+import com.jsk.routinemanager.domain.GroceryOps
+import com.jsk.routinemanager.domain.OutlineOps
 import com.jsk.routinemanager.domain.RoutineResolver
 import com.jsk.routinemanager.domain.RoutineState
 import com.jsk.routinemanager.domain.ScreenRules
 import com.jsk.routinemanager.domain.TimeFormat
 import com.jsk.routinemanager.domain.dayIndex
 import com.jsk.routinemanager.domain.minuteOfDay
+import com.jsk.routinemanager.ui.lists.ListKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -77,7 +81,18 @@ sealed interface Screen {
     data object Debug : Screen
 }
 
-class MainViewModel(repository: DataRepository, minuteTicks: Flow<LocalDateTime>) : ViewModel() {
+/** The list menu's counts (README › List menu); Self and Room have none. */
+data class MenuBadges(
+    /** Not-done to-dos at every level. */
+    val todo: Int,
+    /** Selected grocery items in all categories. */
+    val grocery: Int,
+)
+
+internal fun menuBadges(data: AppData) =
+    MenuBadges(todo = OutlineOps.openCount(data.todo), grocery = GroceryOps.selectedCount(data.grocery))
+
+class MainViewModel(private val repository: DataRepository, minuteTicks: Flow<LocalDateTime>) : ViewModel() {
 
     private val shown = MutableStateFlow<Screen>(Screen.Home)
 
@@ -87,6 +102,34 @@ class MainViewModel(repository: DataRepository, minuteTicks: Flow<LocalDateTime>
     fun show(screen: Screen) {
         shown.value = screen
     }
+
+    private val opened = MutableStateFlow<ListKey?>(null)
+
+    /** The list shown in the list panel, or null for the menu. Survives rotation; not saved (SPEC §3.5). */
+    val openList: StateFlow<ListKey?> = opened.asStateFlow()
+
+    fun showList(list: ListKey) {
+        opened.value = list
+    }
+
+    fun showMenu() {
+        opened.value = null
+    }
+
+    /** The saved lists for the list panel; null until loaded. */
+    val data: StateFlow<AppData?> = repository.data
+
+    val badges: StateFlow<MenuBadges?> = repository.data
+        .map { it?.let(::menuBadges) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
+
+    fun toggleDone(id: String) = repository.update { it.copy(todo = OutlineOps.toggleDone(it.todo, id)) }
+
+    fun toggleGroceryItem(categoryId: String, itemId: String) =
+        repository.update { it.copy(grocery = GroceryOps.toggle(it.grocery, categoryId, itemId)) }
+
+    fun toggleCollapsed(categoryId: String) =
+        repository.update { it.copy(grocery = GroceryOps.toggleCollapsed(it.grocery, categoryId)) }
 
     // List edits don't touch the blocks, so they don't recompute the dashboard.
     private val blocks = repository.data.filterNotNull().map { it.blocks }.distinctUntilChanged()

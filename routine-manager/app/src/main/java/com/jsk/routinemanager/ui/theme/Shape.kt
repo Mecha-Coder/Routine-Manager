@@ -27,6 +27,9 @@ object RmShapes {
     /** Text fields and wheel pickers. */
     val field = RoundedCornerShape(12.dp)
     val dragGhost = RoundedCornerShape(14.dp)
+
+    /** The pressed tint behind a grocery category header. */
+    val categoryHeader = RoundedCornerShape(14.dp)
     val timetableBlock = RoundedCornerShape(8.dp)
 
     /** Pills and badges: fully rounded. */

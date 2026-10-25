@@ -97,5 +97,5 @@ There are no Android Studio GUI checks (Profiler, Layout Inspector): the owner d
 - Dependencies: only those in ARCHITECTURE §1. Ask before adding any other.
 - When unsure how a library API works today (Compose, DataStore, lifecycle), check its current docs (context7) before writing the code.
 - Don't change AGP, Gradle, Kotlin, `compileSdk`/`targetSdk` (37) or `minSdk` (31) without asking.
-- At the end of a milestone, update its status and notes in `docs/BUILD_PLAN.md`, then ask the owner before committing as `M<n>: <summary>` and pushing to `origin main`.
+- At the end of a milestone, update its status and notes in `docs/BUILD_PLAN.md`, then commit as `M<n>: <summary>` and push to `origin main`. The owner doesn't need to be asked first (owner decision, M5).
 - Never commit keystores, `keystore.properties` or passwords.
