@@ -21,9 +21,10 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 | M3 Dashboard and debug screen | Done |
 | M4 Night and power | Done |
 | M5 List menu, list view mode, portrait | Done |
-| M6 List edit mode | Not started |
+| M6 List edit mode | Done |
 | M7 Drag: indent and reorder | Not started |
-| M8 Settings and sound | Not started |
+| M8 Settings and sound | Done |
+| M8b Two replacement tones | Not started |
 | M9 Weekly timetable | Not started |
 | M10 Block editor dialog | Not started |
 | M11 App icon | Done |
@@ -397,15 +398,90 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - Convert the three WAVs to OGG (ARCHITECTURE §7). `TonePlayer` and `BlockChime` per SPEC §3.1.
 
 **Acceptance criteria**
-- [ ] Unit tests: gain curve; chime decisions (start = baseline, no sound; change to a real block plays after 350 ms; change to Free time or Bedtime is silent; a second change within 350 ms plays only for the last one).
-- [ ] The three sounds add less than 0.5 MB to the APK.
+- [x] Unit tests: gain curve; chime decisions (start = baseline, no sound; change to a real block plays after 350 ms; change to Free time or Bedtime is silent; a second change within 350 ms plays only for the last one).
+- [x] The three sounds add less than 0.5 MB to the APK.
 
 **Install on the phone and verify**
-- [ ] Each tone previews; Stop stops it; the slider changes loudness while playing.
-- [ ] Fake clock across Mon 07:59 → 08:00: the tone plays about 350 ms after the change. Crossing into Free time or Bedtime is silent.
-- [ ] With a podcast or music playing, it gets quieter during the tone and recovers after.
-- [ ] Light/Dark switch is correct on every screen built so far.
-- [ ] 30-minute memory check that includes at least one real block change.
+- [x] Each tone previews; Stop stops it; the slider changes loudness while playing. (adb and owner; loudness: see notes.)
+- [x] Fake clock across Mon 07:59 → 08:00: the tone plays about 350 ms after the change. Crossing into Free time or Bedtime is silent.
+- [x] With a podcast or music playing, it gets quieter during the tone and recovers after. (Owner.)
+- [x] Light/Dark switch is correct on every screen built so far.
+- [x] 30-minute memory check that includes at least one real block change. (Supervisor.)
+
+**Notes**
+- **Where things are:**
+  - `sound/TonePlayer.kt` (in `AppContainer`). Each play gets a new MediaPlayer, prepared with `prepareAsync`, with AudioAttributes(USAGE_MEDIA, CONTENT_TYPE_SONIFICATION) and focus `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`. The player is released and focus abandoned when the tone ends, is stopped, or loses focus (`AUDIOFOCUS_LOSS` or `LOSS_TRANSIENT`). `playing` drives Preview / Stop.
+  - `sound/BlockChime.kt` (in `AppContainer`, pure Kotlin) is the prototype's `tick()` rule. `MainActivity` feeds it from the same routine collector as `ScreenPolicy`, which runs only while the app is visible.
+  - `ui/settings/SettingsScreen.kt`. `ui/components/SegmentedControl.kt`.
+  - `ui/timetable/TimetableScreen.kt` is a placeholder for M9 (header and one line). `Screen.Settings` and `Screen.Timetable` are in `MainViewModel`; Back goes Timetable → Settings → Home.
+  - New theme entries: RmType `settingsLabel`, `settingsLabelSelected`, `settingsDescription` and `control` (prototype 16/500, 16/700, 13/400, 14/500), and RmShapes `settingsCardRow` (4 dp).
+- **Sounds (louder than the WAVs, SPEC §3.1 Loudness):**
+  - Encoded from copies of `design/assets/sounds/*.wav` (design/ unchanged) with the Mac's ffmpeg 8.1.2: `ffmpeg -i <name>.wav -af "volume=<gain>" -c:a libvorbis -q:a 4 -map_metadata -1 <name>.ogg`. Plain gain only, so each tone keeps its character:
+    - chime: +11.3 dB
+    - pad: +11.4 dB
+    - bowl: +3.8 dB
+  - Measured with `ebur128=peak=true` (integrated / true peak / LRA / peak-to-loudness), WAV → final OGG:
+    - singing_bowl: −22.3 LUFS / −5.0 dBTP / 21.4 LU / 17.3 dB → **−18.4 LUFS / −1.2 dBTP / 21.4 LU / 17.2 dB**
+    - soft_chime: −25.3 / −14.1 / 3.7 / 11.2 → **−14.0 / −2.8 / 3.7 / 11.2**
+    - warm_pad: −27.0 / −12.6 / 4.8 / 14.4 → **−15.6 / −1.1 / 4.8 / 14.5**
+  - Two-pass `loudnorm` to −14 LUFS was not used: for the bowl (peak −5.0 dBFS, LRA 21.4 LU) and the pad, reaching −14 LUFS under −1 dBTP needs loudnorm's dynamic mode, which would also reshape their envelopes (supervisor, M8).
+  - The chime stops at −14 LUFS (SPEC's "chime ≈ −14 LUFS, about +11 dB"); plain gain all the way to −1 dBTP would make it −12.2 LUFS.
+  - **Rejected by ear: a louder bowl with a limiter on the strike.** The filter was `volume=7dB,alimiter=limit=0.8414:attack=5:release=50:level=false:latency=true`: −15.5 LUFS / −1.3 dBTP / 21.4 LU / 14.2 dB. The measurements looked clean:
+    - The limiter acted only in the first 0.3 s (up to −3.3 dB). After that, peaks matched the original + 7 dB within ±0.2 dB, so the fade was not lifted.
+    - The strike's energy above 1.5 kHz rose only from −41.5 to −41.1 dB relative to the strike.
+
+    The owner still heard the strike as wrong, so the bowl is plain gain to −1.2 dBTP. It can't be louder without touching the strike.
+  - Sizes: singing_bowl 52,519, soft_chime 50,341, warm_pad 57,759 = 160,619 bytes (157 KB). Each is mono, 44.1 kHz, 10.40 s, with no tags. Stored uncompressed in the APK, so they add exactly that. Release APK (unsigned): 2,920,686 bytes.
+- **Default tone is Soft chime (SPEC D25, owner, M8):** after hearing the louder files, the owner found the Singing bowl and Warm pad too soft to notice a block change. `Settings.tone` now defaults to `CHIME`, so fresh installs, `SampleData` (and with it the debug Reset), and a saved file without a tone all get Soft chime. A saved choice is kept, because the file always holds the tone (`encodeDefaults`). Bowl and pad stay selectable with their current files; replacing them is M8b. The phone's debug app was set to Soft chime at 60 % without playing a sound: volume 0 first, select, Stop, then 60.
+- **Decisions (supervisor, M8):**
+  - The tone or a preview stops when the app is hidden (`onStop`), per SPEC D4 and §3.1 and CLAUDE.md's "nothing runs while the app is hidden". `onStop` also re-takes the chime baseline.
+  - The slider's unfilled track uses `outline`; the README has no slider token.
+- **Debug Reset** stops the tone and re-takes the baseline before it loads the sample data (M3 note).
+- **Volume slider is not Material's Slider.** M3 1.4's slot-based `Slider` (custom thumb and track) in a `weight(1f)` row laid itself out 38 px wider than its slot (uiautomator: 516 px against the 478 px slot). Taps and drags in the last 19 px at each end did nothing, and the value saturated before the drawn ends. It is now a `Canvas` with `detectTapGestures` and `detectHorizontalDragGestures`, value = round((x − r) / (w − 2r) × 100) clamped to 0..100. It is drawn like Chrome's range input: an 8 dp track with a 1 dp `outline` border, `textPrimary` fill and a 16 dp thumb. A vertical swipe that starts on it still scrolls. On the phone, taps gave exactly 0/25/50/75/100 % at the expected x, both ends included.
+- **Bug found on the phone:** inside `MediaPlayer().apply { }`, `stop()` resolved to `MediaPlayer.stop()`, not `TonePlayer.stop()`, so in the first build a tone that ended kept its player and the audio focus, and the button stayed on Stop. The player is now built without `apply`, and a comment explains why.
+- **System bars:** a version that set `isAppearanceLightStatusBars` / `NavigationBars` from the app's palette was tried and removed. The flags were applied (`dumpsys window`: `mLastAppearance=LIGHT_STATUS_BARS LIGHT_NAVIGATION_BARS`), but bars swiped in while hidden still showed white icons on the system's grey scrim. So this phone styles transient bars itself, whatever the app asks. The M4 recheck "with the phone in light mode" needs a phone setting change and was not done. Bars on the light palette: grey scrim with white icons (`m8-bars-light.png`); on the dark palette: white icons (`m8-bars-dark.png`).
+- **For M10:** creating a block that covers now plays the tone with no extra code, because the routine flow re-emits when the blocks change.
+- **Unit tests:** 88 (8 new: 7 in `BlockChimeTest`, plus `SampleDataTest.newInstallsAndResetsUseSoftChime…`). Lint: 0 errors, the 2 accepted M1 warnings. `assembleRelease` builds.
+- **Phone, 25 Oct (debug build, landscape, notch on the right, phone unplugged and in dark mode):**
+  - Settings matches the prototype (`temp/screenshot/m8-proto-settings.png` against `m8-settings-light.png`). Measured in dp: back button centre 38.1 / 40.3 (prototype 38 / 40); title x 69.9, y 26.1 (70 / 26.5); "Appearance" x 37.9, y 72.5 (38 / 72); first tone name y 103.5 (103.3). The second column starts at 441.5 dp, because the phone is 853 dp wide and has 34 dp of notch padding.
+  - Preview, read from `dumpsys audio` and `dumpsys media.audio_flinger`:
+    - Focus `GAIN_TRANSIENT_MAY_DUCK` with USAGE_MEDIA / CONTENT_TYPE_SONIFICATION; the player started 87 ms after the focus request.
+    - Track gain 0.324 at 60 % (−9.8 dB), 0.225 at 50 %. Dragging the slider while it played changed it at once to 0.900 at 100 % and 0.056 at 25 %.
+    - At the end of the file: `playback complete`, `release` and `abandonAudioFocus` within 18 ms, and the button returned to "Preview sound".
+    - Stop 2 s in: released 14 ms after the tap, focus abandoned, no active track.
+    - Home during a preview: released and focus abandoned 2 s later; back on Settings the button read "Preview sound".
+    - Each tone row selected its tone (saved as `pad`, `chime`, `bowl`) and started its preview, with one active track each time.
+  - Chime, with the fake clock paused:
+    - A jump from Mon 07:59 to 08:00 requested audio focus 384 ms after the touch on the slider; 378 ms on the final build. That is the 350 ms wait plus touch handling.
+    - Sat 11:59 → 12:00 (Free time) and Mon 22:59 → 23:01 (Bedtime): no focus request. At Bedtime the screen dimmed to 0.05.
+  - At 60× across Mon 08:00: one request, about 0.49 s after starting the clock, and none at 08:01–08:04.
+  - At 600× from Mon 05:58 to 23:51: 9 requests, one per weekday block start (06:00, 07:00, 08:00, 12:00, 13:00, 17:30, 18:30, 20:00, 22:30), spaced 6.0 s per clock hour. Nothing at 23:00.
+  - Debug Reset: the current block's id changed (8da4d3fc → 0a91b7ce) and no tone played.
+  - Hidden at 600× for 10 s, then back: no request while hidden and none on return. The next one came at the next block start.
+  - Light / Dark: home, To-Do, Grocery, Settings, the timetable placeholder and the debug screen in both palettes (`m8-<screen>-light.png` / `-dark.png`). The setting is saved at once (`"theme": "dark"` in `app_data.json`).
+  - Idle redraw on the live dashboard (real Bedtime, dim), 23:20–23:23: 4 framestats frames ("Total frames rendered" 8). Two of them came 60.06 s and 60.00 s after the one before; the extra frame is the re-dim 30 s after the last touch.
+  - No crashes or ANRs (crash buffer, logcat and dropbox), also after the final install on 26 Oct. Battery simulation was not used. The debug app was left on the live dashboard with light theme, Soft chime, 60 %.
+- **Owner, 25 Oct:** all three tones are audible; the slider changes loudness while a tone plays; Stop is instant; a podcast is ducked during the tone and recovers. Settings in portrait (checked by the supervisor over adb): the sections stack in one column and nothing is cut off. **At 100 % with the phone's media volume high, the tone was not loud enough**, so the files were made louder (Sounds, above). Owner, 26 Oct: all three louder tones are loud enough; the limited bowl's strike sounded wrong, so it was replaced by the plain-gain bowl. After that, the bowl and the pad were still too soft for a block change, so the default became Soft chime (SPEC D25) and the two tones get replaced in M8b.
+- **Gate (26 Oct 2026, on `main` with M6 and M8 merged):** clean `assembleDebug lintDebug testDebugUnitTest assembleRelease` passes (107 tests, 0 failures; lint 0 errors, the 2 accepted warnings). Installed; Settings and To-Do edit mode checked on the phone; no crashes or ANRs. Memory, 30 minutes (00:16–00:46) with the debug clock started at Mon 07:54 at 1× so the 08:00 Work Session1 start played the tone (audio focus 00:21:33, released 00:21:43; app volume 0 at night): 98,366 KB at minute 5, 96,158 KB at minute 30, flat. Afterwards: debug clock Live, Soft chime at 60 %.
+
+---
+
+## M8b Two replacement tones
+
+**Goal:** replace Singing bowl and Warm pad, which are too soft to notice a block change, with two crisper sounds the owner picks (SPEC D25). Soft chime stays and is the default.
+
+**Build**
+- Make 4–6 candidate sounds, each about 1–3 s, clearly audible on the phone speaker at 60 %: synthesised (as the handoff's tones were, from the prototype's synth) or taken from sources whose licence allows use in the app (for example AOSP's Apache-2.0 notification sounds). Record each source and licence.
+- Let the owner listen and pick two, with names and one-line descriptions for the Settings rows.
+- Replace the two OGGs and their Settings labels; keep the saved `tone` keys working (an old saved key maps to its replacement). Loudness as SPEC §3.1 (plain gain, true peak ≤ −1 dBTP), similar to Soft chime.
+
+**Acceptance criteria**
+- [ ] The owner picked both sounds by ear; sources and licences are in the notes.
+- [ ] The sounds still add less than 0.5 MB in total.
+- [ ] A saved `bowl` or `pad` setting still loads and plays its replacement.
+
+**Install on the phone and verify**
+- [ ] Each tone previews from Settings; the block-change tone plays the selected one.
 
 ---
 

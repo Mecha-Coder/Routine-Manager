@@ -20,7 +20,9 @@ import com.jsk.routinemanager.screen.ScreenPolicy
 import com.jsk.routinemanager.ui.MainViewModel
 import com.jsk.routinemanager.ui.Screen
 import com.jsk.routinemanager.ui.home.HomeScreen
+import com.jsk.routinemanager.ui.settings.SettingsScreen
 import com.jsk.routinemanager.ui.theme.RoutineManagerTheme
+import com.jsk.routinemanager.ui.timetable.TimetableScreen
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -39,13 +41,17 @@ class MainActivity : ComponentActivity() {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             hide(WindowInsetsCompat.Type.systemBars())
         }
-        // Keep-screen-on and the Bedtime dim, checked at every minute tick while visible (SPEC §3.2, §3.3).
+        val container = (application as RoutineApp).container
+        // At every minute tick while visible: keep-screen-on and the Bedtime dim (SPEC §3.2, §3.3),
+        // and the block-change tone (SPEC §3.1).
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.routine.collect(screenPolicy::update)
+                viewModel.routine.collect { routine ->
+                    screenPolicy.update(routine)
+                    container.chime.onRoutine(routine)
+                }
             }
         }
-        val container = (application as RoutineApp).container
         setContent {
             val dark by viewModel.darkTheme.collectAsStateWithLifecycle()
             RoutineManagerTheme(dark = dark) {
@@ -53,9 +59,15 @@ class MainActivity : ComponentActivity() {
                 when (screen) {
                     Screen.Home -> HomeScreen(
                         viewModel,
-                        onSettings = {}, // Settings comes in M8.
+                        onSettings = { viewModel.show(Screen.Settings) },
                         onDebug = if (DebugEntry.AVAILABLE) ({ viewModel.show(Screen.Debug) }) else null,
                     )
+                    Screen.Settings -> SettingsScreen(
+                        viewModel,
+                        onBack = { viewModel.show(Screen.Home) },
+                        onTimetable = { viewModel.show(Screen.Timetable) },
+                    )
+                    Screen.Timetable -> TimetableScreen(onBack = { viewModel.show(Screen.Settings) })
                     Screen.Debug -> DebugEntry.Screen(container, onBack = { viewModel.show(Screen.Home) })
                 }
             }
@@ -69,7 +81,12 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         screenPolicy.onHidden()
+        val container = (application as RoutineApp).container
+        // The tone plays only while the app is visible; on return, the routine then is the
+        // baseline, so block starts missed meanwhile are never replayed (SPEC §3.1).
+        container.tonePlayer.stop()
+        container.chime.rebaseline()
         // Pending changes are written when the app goes to the background (SPEC §3.5).
-        (application as RoutineApp).container.repository.flush()
+        container.repository.flush()
     }
 }

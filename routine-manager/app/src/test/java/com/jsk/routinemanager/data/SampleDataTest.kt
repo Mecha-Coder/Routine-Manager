@@ -64,6 +64,16 @@ class SampleDataTest {
         assertEquals(listOf("Chemical"), data.grocery.flatMap { it.items }.filter { it.on }.map { it.text })
         assertEquals(listOf("Cut Hair", "Cut Nail", "Floss teeth"), data.self.map { it.text })
         assertEquals(listOf("Change bedsheet", "Vacuum floor", "Water plants"), data.room.map { it.text })
-        assertEquals(Settings(Theme.LIGHT, Tone.BOWL, 60), data.settings)
+        // The prototype's settings, except the tone (SPEC D25, next test).
+        assertEquals(Settings(Theme.LIGHT, Tone.CHIME, 60), data.settings)
+    }
+
+    @Test
+    fun newInstallsAndResetsUseSoftChimeBecauseTheBowlAndPadAreTooSoftToNoticeABlockChange() {
+        // SPEC D25 (owner, M8): at full volume the bowl and the pad are missed, so the default must be
+        // a tone that is heard. The sample (fresh install, debug reset) and a saved file without a
+        // tone both get it.
+        assertEquals(Tone.CHIME, data.settings.tone)
+        assertEquals(Tone.CHIME, AppDataSerializer.json.decodeFromString(AppData.serializer(), "{}").settings.tone)
     }
 }

@@ -25,7 +25,8 @@ data class AppData(
 @Serializable
 data class Settings(
     val theme: Theme = Theme.LIGHT,
-    val tone: Tone = Tone.BOWL,
+    /** Soft chime, not the README's bowl: the bowl and the pad are too soft to notice (SPEC D25). */
+    val tone: Tone = Tone.CHIME,
     /** 0..100. */
     val volume: Int = 60,
 )

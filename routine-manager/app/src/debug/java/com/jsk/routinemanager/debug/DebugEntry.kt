@@ -29,7 +29,13 @@ object DebugEntry {
         DebugScreen(
             clock = fakeClock,
             ticks = container.minuteTicks,
-            onReset = { container.repository.update { SampleData.create() } },
+            onReset = {
+                // As the prototype's reset: stop the tone and take a new baseline. The sample data
+                // gives every block a new id, which would otherwise count as a block change and play.
+                container.tonePlayer.stop()
+                container.chime.rebaseline()
+                container.repository.update { SampleData.create() }
+            },
             onBack = onBack,
         )
     }

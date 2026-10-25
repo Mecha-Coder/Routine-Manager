@@ -9,11 +9,14 @@ import com.jsk.routinemanager.data.AppDataSerializer
 import com.jsk.routinemanager.data.DataRepository
 import com.jsk.routinemanager.data.keepCorruptCopyAndStartOver
 import com.jsk.routinemanager.debug.DebugEntry
+import com.jsk.routinemanager.sound.BlockChime
+import com.jsk.routinemanager.sound.TonePlayer
 import com.jsk.routinemanager.time.AppClock
 import com.jsk.routinemanager.time.minuteTicks
 import com.jsk.routinemanager.time.timeChanges
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.merge
@@ -52,6 +55,13 @@ class AppContainer(context: Context) {
 
     /** Cold: each collector gets its own timer and receiver, running only while it collects. */
     val minuteTicks: Flow<LocalDateTime> = minuteTicks(clock, merge(context.timeChanges(), DebugEntry.clockChanges))
+
+    val tonePlayer = TonePlayer(context)
+
+    /** Plays the selected tone at its volume when a block starts (SPEC §3.1). Fed by MainActivity while visible. */
+    val chime = BlockChime(MainScope()) {
+        repository.data.value?.settings?.let { tonePlayer.play(it.tone, it.volume) }
+    }
 
     private companion object {
         const val TAG = "RoutineApp"

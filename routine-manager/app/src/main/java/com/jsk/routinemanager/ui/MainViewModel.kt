@@ -11,6 +11,9 @@ import com.jsk.routinemanager.data.Block
 import com.jsk.routinemanager.data.DataRepository
 import com.jsk.routinemanager.data.GroceryCategory
 import com.jsk.routinemanager.data.OutlineItem
+import com.jsk.routinemanager.data.Settings
+import com.jsk.routinemanager.data.Theme
+import com.jsk.routinemanager.data.Tone
 import com.jsk.routinemanager.data.newId
 import com.jsk.routinemanager.domain.ClockText
 import com.jsk.routinemanager.domain.GroceryOps
@@ -21,6 +24,7 @@ import com.jsk.routinemanager.domain.ScreenRules
 import com.jsk.routinemanager.domain.TimeFormat
 import com.jsk.routinemanager.domain.dayIndex
 import com.jsk.routinemanager.domain.minuteOfDay
+import com.jsk.routinemanager.sound.TonePlayer
 import com.jsk.routinemanager.ui.lists.ListKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,6 +84,12 @@ internal fun dashboardUi(blocks: List<Block>, now: LocalDateTime): DashboardUi {
 sealed interface Screen {
     data object Home : Screen
 
+    /** Full screen, over everything (README › Screens › 4). */
+    data object Settings : Screen
+
+    /** Opened from Settings; Back returns there (README › Screens › 5). */
+    data object Timetable : Screen
+
     /** Debug builds only (SPEC §3.6). */
     data object Debug : Screen
 }
@@ -95,7 +105,11 @@ data class MenuBadges(
 internal fun menuBadges(data: AppData) =
     MenuBadges(todo = OutlineOps.openCount(data.todo), grocery = GroceryOps.selectedCount(data.grocery))
 
-class MainViewModel(private val repository: DataRepository, minuteTicks: Flow<LocalDateTime>) : ViewModel() {
+class MainViewModel(
+    private val repository: DataRepository,
+    minuteTicks: Flow<LocalDateTime>,
+    private val tonePlayer: TonePlayer,
+) : ViewModel() {
 
     private val shown = MutableStateFlow<Screen>(Screen.Home)
 
@@ -200,6 +214,41 @@ class MainViewModel(private val repository: DataRepository, minuteTicks: Flow<Lo
     fun addGroceryItem(categoryId: String, afterItemId: String?): String =
         newId().also { new -> updateGrocery { GroceryOps.addItem(it, categoryId, afterItemId, new) } }
 
+    /** Null until the saved data is loaded. */
+    val settings: StateFlow<Settings?> = repository.data
+        .map { it?.settings }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
+
+    /** A tone or preview is playing (the Settings Preview / Stop button). */
+    val tonePlaying: StateFlow<Boolean> = tonePlayer.playing
+
+    private fun updateSettings(transform: (Settings) -> Settings) =
+        repository.update { it.copy(settings = transform(it.settings)) }
+
+    /** Saved at once; during Bedtime the screen stays dark until Bedtime ends (SPEC §3.2). */
+    fun setTheme(theme: Theme) = updateSettings { it.copy(theme = theme) }
+
+    /** Tapping a tone row selects it and plays it as a preview (README › Screens › 4). */
+    fun pickTone(tone: Tone) {
+        updateSettings { it.copy(tone = tone) }
+        repository.data.value?.let { tonePlayer.play(tone, it.settings.volume) }
+    }
+
+    /** A playing tone follows the slider at once (SPEC §3.1). */
+    fun setVolume(volume: Int) {
+        updateSettings { it.copy(volume = volume) }
+        tonePlayer.setVolume(volume)
+    }
+
+    /** "Preview sound" plays the selected tone; while playing, the button stops it. */
+    fun togglePreview() {
+        if (tonePlayer.playing.value) {
+            tonePlayer.stop()
+        } else {
+            repository.data.value?.settings?.let { tonePlayer.play(it.tone, it.volume) }
+        }
+    }
+
     // List edits don't touch the blocks, so they don't recompute the dashboard.
     private val blocks = repository.data.filterNotNull().map { it.blocks }.distinctUntilChanged()
 
@@ -234,7 +283,7 @@ class MainViewModel(private val repository: DataRepository, minuteTicks: Flow<Lo
         val Factory = viewModelFactory {
             initializer {
                 val container = (this[APPLICATION_KEY] as RoutineApp).container
-                MainViewModel(container.repository, container.minuteTicks)
+                MainViewModel(container.repository, container.minuteTicks, container.tonePlayer)
             }
         }
     }

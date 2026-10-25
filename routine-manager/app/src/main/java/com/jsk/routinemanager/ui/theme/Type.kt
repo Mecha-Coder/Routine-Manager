@@ -102,6 +102,18 @@ object RmType {
     val label = style(11f, 600).copy(letterSpacing = 0.08.em)
     val settingsSection = style(13f, 600)
 
+    /** Settings row labels ("Theme", "Weekly timetable") and tone names (prototype: 16 / 500). */
+    val settingsLabel = style(16f, 500)
+
+    /** The selected tone's name. */
+    val settingsLabelSelected = settingsLabel.copy(fontWeight = FontWeight(700))
+
+    /** A tone's description under its name (prototype: 13 / 400). */
+    val settingsDescription = style(13f, 400)
+
+    /** The Theme segmented control's Light / Dark and the volume's `60%` (prototype: 14 / 500). */
+    val control = style(14f, 500)
+
     val timetableBlockTitle = style(10.5f, 600)
 
     /** Drawn at 72 % opacity by the timetable. */

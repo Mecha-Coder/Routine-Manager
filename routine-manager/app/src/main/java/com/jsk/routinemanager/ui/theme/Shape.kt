@@ -22,6 +22,12 @@ object RmShapes {
     )
 
     val settingsRow = RoundedCornerShape(24.dp)
+
+    /**
+     * A row of the Settings tone card. The card is clipped to [settingsRow], so with 2 dp gaps its
+     * 4 dp rows read as one card with 24 dp outer corners.
+     */
+    val settingsCardRow = RoundedCornerShape(4.dp)
     val dialog = RoundedCornerShape(28.dp)
 
     /** Text fields and wheel pickers. */
