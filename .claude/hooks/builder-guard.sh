@@ -37,7 +37,7 @@ case "$tool" in
     has "${s}brew[[:space:]]+(install|uninstall|upgrade|remove|reinstall)" && block "installing Mac software needs the owner"
     has "(curl|wget)[^|]*\|[[:space:]]*(sudo[[:space:]]+)?(ba|z)?sh" && block "piping downloads into a shell is not allowed"
 
-    p='(\.claude/|(^|[[:space:]"'\''/])design/|CLAUDE\.md|docs/SPEC\.md|docs/ARCHITECTURE\.md)'
+    p='(\.claude/(hooks|agents|skills|settings)|(^|[[:space:]"'\''/])design/|CLAUDE\.md|docs/SPEC\.md|docs/ARCHITECTURE\.md)'
     if has "$p"; then
       has "(sed|perl)[[:space:]]+(-[[:alnum:]]*[[:space:]]+)*-i|${s}(tee|mv|rm|chmod|truncate|ln)[[:space:]]" \
         && block "the guard, the design handoff, CLAUDE.md, SPEC and ARCHITECTURE are changed only by the supervisor"
@@ -47,8 +47,14 @@ case "$tool" in
     ;;
   Edit|Write|NotebookEdit)
     path=$(jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' <<<"$input")
+    # A builder's own worktree (.claude/worktrees/<name>/) is checked like the project root.
     case "$path" in
-      */.claude/*|"$root"/design/*|"$root"/CLAUDE.md|"$root"/docs/SPEC.md|"$root"/docs/ARCHITECTURE.md)
+      */.claude/worktrees/*/*) rel=${path#*/.claude/worktrees/*/} ;;
+      "$root"/*) rel=${path#"$root"/} ;;
+      *) rel=$path ;;
+    esac
+    case "$rel" in
+      .claude/*|*/.claude/*|design/*|CLAUDE.md|docs/SPEC.md|docs/ARCHITECTURE.md)
         block "the guard, the design handoff, CLAUDE.md, SPEC and ARCHITECTURE are changed only by the supervisor; propose the change in your report" ;;
     esac
     ;;

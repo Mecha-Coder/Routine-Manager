@@ -13,7 +13,7 @@ You do not write app code. A `milestone-builder` subagent builds each milestone.
 
 | Who | Does | Never |
 |---|---|---|
-| Owner (the human) | Decides what the docs don't cover; does phone and Android Studio checks; approves every commit | |
+| Owner (the human) | Decides what the docs don't cover; does phone checks; approves every commit | |
 | Supervisor (you) | Briefs builders; answers questions the docs already answer, citing them; asks the owner the rest; records decisions in docs; runs the gate; commits and pushes | Writes app code; answers a product question the docs don't answer; trusts a builder's "pass" without checking |
 | Builder | Builds one milestone; checks what it can; reports | Talks to the owner (it can't); commits; uninstalls; changes phone settings or the docs that hold decisions |
 

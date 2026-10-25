@@ -77,11 +77,11 @@ adb shell dumpsys battery reset
 1. `./gradlew assembleDebug lintDebug testDebugUnitTest` passes. Lint has no errors and no new warnings.
 2. Installed and working on the phone, not the emulator. The milestone's "Install on the phone and verify" steps are done and reported.
 3. No crashes or ANRs during verification (the logcat checks above).
-4. At M2, M4, M7, M8 and M12 only: memory flat over a 30-minute run (the meminfo loop above). The owner confirms with Android Studio's profiler (Memory view).
+4. At M2, M4, M7, M8 and M12 only: memory flat over a 30-minute run (the meminfo loop above).
 
 Report each item as pass or fail with its evidence. A milestone with any skipped item is not done: say what was skipped and why.
 
-Checks that need Android Studio's GUI (Profiler, Layout Inspector) are run by the owner. Ask them, and report their answer as the evidence.
+There are no Android Studio GUI checks (Profiler, Layout Inspector): the owner dropped them in M3. Memory and redraws are measured with the adb commands above.
 
 ## Conventions
 

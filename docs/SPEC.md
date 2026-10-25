@@ -53,6 +53,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D21 | Build order | M1, M2, then M3 (dashboard) with M11 (icon) beside it. After M3, two tracks run in parallel, each in its own git worktree: lists (M5 → M6 → M7) and power, settings and timetable (M4, M8 → M9 → M10). Builders take turns on the phone; the supervisor merges each milestone onto `main` after its gate and the owner's OK. Then M12 (release) and M13 (user guide). See [BUILD_PLAN.md](BUILD_PLAN.md). (Parallel tracks: owner, M2.) | Plan |
 | D22 | User guide | A root `README.md` walks through every feature with phone screenshots and links to the prototype on GitHub Pages so people can try it in a browser (M13). It lives on GitHub only; the app gets no help screen. | Adds |
 | D23 | Kotlin version | Kotlin **2.4.21**, up from the wizard's 2.2.10, so the serialization plugin and `kotlinx-serialization-json` can be current. The Compose compiler and serialization plugins use the same version. (Owner, M1.) | Adds |
+| D24 | App icon | Concept C: "07:05" in Google Sans Flex above the dashboard's progress bar. Release icon in the **light** palette (off-white `#E6E6E6`, black `#0F0F0F`, cobalt `#2952E6`). Debug icon uses the **dark** palette and adds a `bug_report` badge, also on the monochrome (themed) layer. (Owner, M11.) | Adds |
 
 ## 3. Detailed rules
 

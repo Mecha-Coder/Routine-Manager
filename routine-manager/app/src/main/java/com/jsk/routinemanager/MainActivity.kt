@@ -11,8 +11,10 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.jsk.routinemanager.debug.DebugEntry
 import com.jsk.routinemanager.ui.MainViewModel
-import com.jsk.routinemanager.ui.home.DashboardPlaceholder
+import com.jsk.routinemanager.ui.Screen
+import com.jsk.routinemanager.ui.home.HomeScreen
 import com.jsk.routinemanager.ui.theme.RoutineManagerTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,9 +34,20 @@ class MainActivity : ComponentActivity() {
         }
         // Always on for now; M4 adds the low-battery rule (SPEC §3.3).
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val container = (application as RoutineApp).container
         setContent {
             val dark by viewModel.darkTheme.collectAsStateWithLifecycle()
-            RoutineManagerTheme(dark = dark) { DashboardPlaceholder(viewModel.dashboard) }
+            RoutineManagerTheme(dark = dark) {
+                val screen by viewModel.screen.collectAsStateWithLifecycle()
+                when (screen) {
+                    Screen.Home -> HomeScreen(
+                        viewModel.dashboard,
+                        onSettings = {}, // Settings comes in M8.
+                        onDebug = if (DebugEntry.AVAILABLE) ({ viewModel.show(Screen.Debug) }) else null,
+                    )
+                    Screen.Debug -> DebugEntry.Screen(container, onBack = { viewModel.show(Screen.Home) })
+                }
+            }
         }
     }
 

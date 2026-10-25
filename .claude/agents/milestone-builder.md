@@ -41,7 +41,7 @@ A guard blocks most of these. If a command is blocked, do not look for another w
 End your turn with a report when any of these happens:
 
 - **QUESTION:** the docs don't answer something, or two docs conflict.
-- **OWNER_CHECK:** you need the owner to do or judge something: on the phone (listen to a tone, judge brightness, try a gesture), or in Android Studio (Profiler, Layout Inspector).
+- **OWNER_CHECK:** you need the owner to do or judge something: on the phone (listen to a tone, judge brightness, try a gesture).
 - **STUCK:** the same failure after 3 different attempts, the phone is disconnected, or a command you need was blocked.
 - **READY_FOR_GATE:** build, lint and tests pass, the app is installed, and you have checked everything you can check yourself.
 

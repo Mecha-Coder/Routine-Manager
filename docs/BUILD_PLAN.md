@@ -2,7 +2,7 @@
 
 Thirteen milestones, each sized for one Claude Code session. Order follows SPEC D21: after M2, M3 with M11 beside it; then two parallel tracks (M5 → M6 → M7, and M4, M8 → M9 → M10); then M12 and M13.
 
-Checks marked **(owner)** need Android Studio's GUI (Layout Inspector, Profiler). Claude asks the owner to run them and reports the answer.
+There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner dropped them in M3. Memory and redraws are measured over adb (CLAUDE.md).
 
 ## How to run a milestone
 
@@ -18,7 +18,7 @@ Checks marked **(owner)** need Android Studio's GUI (Layout Inspector, Profiler)
 |---|---|
 | M1 Foundation: window, theme, font, icons | Done |
 | M2 Data, routine logic, minute clock | Done |
-| M3 Dashboard and debug screen | Not started |
+| M3 Dashboard and debug screen | Done |
 | M4 Night and power | Not started |
 | M5 List menu, list view mode, portrait | Not started |
 | M6 List edit mode | Not started |
@@ -152,14 +152,36 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - Debug screen (debug builds only, SPEC §3.6), opened by long-pressing the Settings gear.
 
 **Acceptance criteria**
-- [ ] Each row of the test-times table looks the same as the prototype at that fake time (prototype in Chrome next to the phone).
-- [ ] Idle redraw check (CLAUDE.md): over 3 idle minutes the app renders about 3 frames, one per minute.
-- [ ] **(owner)** Layout Inspector: the clock panel recomposes once per minute; the right panel doesn't recompose on the minute.
-- [ ] `./gradlew assembleRelease` builds (unsigned until M12), proving release compiles without the debug screen.
+- [x] Each row of the test-times table looks the same as the prototype at that fake time (prototype in Chrome next to the phone).
+- [x] Idle redraw check (CLAUDE.md): over 3 idle minutes the app renders about 3 frames, one per minute.
+- [ ] **(owner)** Layout Inspector: the clock panel recomposes once per minute; the right panel doesn't recompose on the minute. **Skipped (owner decision, M3)**: covered by the idle redraw check (1 frame per minute) and the code check (only `ClockPanel` collects `dashboard`).
+- [x] `./gradlew assembleRelease` builds (unsigned until M12), proving release compiles without the debug screen.
 
 **Install on the phone and verify**
-- [ ] Screenshots at each test time saved to `temp/screenshot/` with `adb exec-out screencap -p`; nothing clipped at 853 × 384 dp, in both landscape directions.
-- [ ] Fake clock at 600× runs through a whole day without a crash.
+- [x] Screenshots at each test time saved to `temp/screenshot/` with `adb exec-out screencap -p`; nothing clipped at 853 × 384 dp, in both landscape directions.
+- [x] Fake clock at 600× runs through a whole day without a crash.
+
+**Notes**
+- **Text boxes are now as tall as in the prototype's CSS (`ui/theme/Type.kt`).** The first build put the dashboard 45 dp, then 4–5 dp, lower than the prototype. Two causes, both measured on the phone:
+  - Compose's default line-height mode (`Mode.Fixed`) pads a single line back up to the font's height when the set line height is smaller: the 0.84 em clock was about 130 dp tall instead of 87.
+  - Compose always turns on Android's fallback line spacing. On this phone that gives any text containing letters a **1.466 em** line (ascent −1.077, descent 0.389 em), although every glyph comes from Google Sans Flex, whose own line is **1.252 em** (hhea 1932 / −572 at 2000 units/em, no line gap; Chrome uses this). Digits-only text keeps 1.252. Found with a temporary probe (`BoringLayout.isBoring` with and without fallback spacing; `elegantTextHeight` made no difference), since removed.
+  - Fix: every `RmType` style has an explicit line height (1.252 em, CSS `normal`, unless the README or prototype gives one: clock 0.84, CURRENT/NEXT 1.15, Bedtime 1.2, sub-routines 1.3, body 1.35) with `LineHeightStyle(Center, Trim.Both, Mode.Tight)`, which pins each line to exactly that height. Known gap: digits-only text in a style taller than 1.252 em (sub-routines, list body) gets a 1.252 em box. Material's own text styles are unchanged.
+  - Result, uiautomator bounds on the phone vs element boxes in Chrome at the same minute (dp, top edge): clock 28.3 / 28, Routine 131.7 / 131.4, start time 180.8 / 180.4, body 226.1 / 225.4, Lists 28.3 / 28.5. Horizontal positions match after scaling the panel to 60 % of 853 dp.
+- **Height budget (SPEC §3.4):** the body takes the remaining height: 136.6 dp on the phone (design 132), so the 5 sub-routine rows are 28.6 dp apart instead of 27.5. Nothing is clipped in any test state.
+- **Layout follows the prototype markup** where the README is brief: the clock row stays at the top in Bedtime and the message is centred in the space below it; there are always 5 sub-routine rows (empty ones keep their height), so 2 sub-routines sit at the top; the progress track is never under 10 dp and is clipped on the right near 100 %, as in the prototype at Mon 12:59.
+- **Debug screen** (`src/debug/.../debug/`): `FakeAppClock` (the prototype's `simNow()`), `DebugScreen`, and `DebugEntry`, the main code's only way in. `src/release/.../debug/DebugEntry` is a stub (system clock, no screen, long-press not wired). The fake clock's changes are merged into the ticker's change flow, so a jump shows at once. Controls follow the prototype: a day chip keeps the time of day; the slider keeps the seconds; any speed, day or slider change leaves Live; Reset loads `SampleData.create()` (lists, blocks and settings). Its unit tests are in `src/testDebug` (they need the debug source set).
+- **Exact test times over adb:** the slider spans the full width (about 1,470 px for 1,439 minutes), so every minute is reachable with one `adb shell input tap`; the time label beside the speed chips confirms it.
+- **Gear tap** does nothing until M8 (Settings). In portrait the home screen shows the list panel (header only until M5).
+- **For M8:** the prototype's Reset also stops the tone and re-takes the chime baseline (`lastKey = null`). The reset gives every block a new id, so without that the reset would count as a block change and play the tone.
+- **Phone fact:** the stand can hold the phone either way round: M3 started at `ROTATION_90` (notch on the left) and ended at `ROTATION_270` (notch on the right, as in M1's note). The gear's position on screen differs between the two (x 1529 px vs 1491 px), so adb taps on it must be read from a UI dump.
+- **Unit tests:** 55 (7 new, `FakeAppClockTest`: live = phone clock; day jump keeps the time within the Mon–Sun week; slider keeps day and seconds; runs on at its speed; pause holds; Live returns; the ticker shows a jump at once). Lint: 0 errors, the 2 accepted M1 warnings.
+- **Phone, 25 Oct (debug build):**
+  - Test times: the 7 rows set with the debug screen (paused) and the same 7 in the prototype (Chrome, TEST bar paused): `temp/screenshot/m3-phone-<state>.png` and `m3-proto-<state>.png`. Each shows the expected block, LEFT, NEXT and sub-routines; Mon 12:59 clips the track on the right exactly as the prototype does.
+  - Both landscape directions: the 7 states again with the notch on the right (`ROTATION_270`, owner turned the phone): `m3-phone-r270-<state>.png`, nothing clipped. The gear's right edge is 45.5 dp from the screen edge there (34 dp notch padding + 12 dp button inset, SPEC D18) and 25.3 dp with the notch on the left (14 + 12); the left panel is the same in both (42 dp already clears the notch).
+  - Idle redraw, live clock, 20:13:48–20:16:48: 3 framestats rows, 60.1 s and 60.0 s apart ("Total frames rendered" 6: the phone counts each frame twice, M2 note).
+  - 600× from Mon 00:00 for 152 s (about 25 clock hours, into Tue 01:24): no crash, no ANR; the date and Bedtime changed at midnight.
+  - `assembleRelease` (R8): 2.4 MB unsigned. `dexdump` finds no `FakeAppClock` or `DebugScreen` class in it (both are in the debug APK); only the `DebugEntry` stub.
+- **Gate (25 Oct 2026):** clean `assembleDebug lintDebug testDebugUnitTest assembleRelease` passes (55 tests, 0 failures, 0 skipped; lint 0 errors, the 2 accepted warnings). Installed, no crashes or ANRs. Idle redraw 20:23–20:26: 3 framestats frames ("Total frames rendered" 6). Only `ClockPanel` collects `dashboard`. No memory check at M3 (CLAUDE.md quality gate).
 
 ---
 
@@ -238,7 +260,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 
 **Acceptance criteria**
 - [ ] Unit tests: max depth = `min(prevDepth + 1, 1)`; no indent for the first item; indenting a parent keeps its children at depth 1; drop depth = `min(originalDepth, prevDepth + 1, 1)`; a parent moves with its children.
-- [ ] **(owner)** Layout Inspector: rows don't recompose on every frame during a drag.
+- [ ] Code check: drag positions are read only in `offset { }`, `graphicsLayer { }` or draw lambdas, so rows don't recompose on every frame during a drag. (Replaces a Layout Inspector check; owner decision, M3.)
 
 **Install on the phone and verify**
 - [ ] All three gestures work in a list long enough to scroll, in To-Do and in Self.

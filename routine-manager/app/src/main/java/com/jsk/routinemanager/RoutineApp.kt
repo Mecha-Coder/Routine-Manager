@@ -8,14 +8,15 @@ import androidx.datastore.dataStoreFile
 import com.jsk.routinemanager.data.AppDataSerializer
 import com.jsk.routinemanager.data.DataRepository
 import com.jsk.routinemanager.data.keepCorruptCopyAndStartOver
+import com.jsk.routinemanager.debug.DebugEntry
 import com.jsk.routinemanager.time.AppClock
-import com.jsk.routinemanager.time.SystemAppClock
 import com.jsk.routinemanager.time.minuteTicks
 import com.jsk.routinemanager.time.timeChanges
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.merge
 import java.time.LocalDateTime
 
 class RoutineApp : Application() {
@@ -46,10 +47,11 @@ class AppContainer(context: Context) {
         hasSavedFile = dataFile::exists,
     )
 
-    val clock: AppClock = SystemAppClock
+    /** The phone's clock; in debug builds the debug screen can move it (SPEC §3.6). */
+    val clock: AppClock = DebugEntry.clock
 
     /** Cold: each collector gets its own timer and receiver, running only while it collects. */
-    val minuteTicks: Flow<LocalDateTime> = minuteTicks(clock, context.timeChanges())
+    val minuteTicks: Flow<LocalDateTime> = minuteTicks(clock, merge(context.timeChanges(), DebugEntry.clockChanges))
 
     private companion object {
         const val TAG = "RoutineApp"

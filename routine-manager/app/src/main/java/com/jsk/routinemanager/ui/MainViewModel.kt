@@ -16,8 +16,10 @@ import com.jsk.routinemanager.domain.TimeFormat
 import com.jsk.routinemanager.domain.dayIndex
 import com.jsk.routinemanager.domain.minuteOfDay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -66,7 +68,24 @@ internal fun dashboardUi(blocks: List<Block>, now: LocalDateTime): DashboardUi {
     )
 }
 
+/** The screen on show. No navigation library: system Back is handled by each screen (ARCHITECTURE §1). */
+sealed interface Screen {
+    data object Home : Screen
+
+    /** Debug builds only (SPEC §3.6). */
+    data object Debug : Screen
+}
+
 class MainViewModel(repository: DataRepository, minuteTicks: Flow<LocalDateTime>) : ViewModel() {
+
+    private val shown = MutableStateFlow<Screen>(Screen.Home)
+
+    /** Kept here so it survives rotation. */
+    val screen: StateFlow<Screen> = shown.asStateFlow()
+
+    fun show(screen: Screen) {
+        shown.value = screen
+    }
 
     // List edits don't touch the blocks, so they don't recompute the dashboard.
     private val blocks = repository.data.filterNotNull().map { it.blocks }.distinctUntilChanged()
