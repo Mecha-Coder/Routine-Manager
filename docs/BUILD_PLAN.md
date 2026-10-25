@@ -9,7 +9,7 @@ Checks marked **(owner)** need Android Studio's GUI (Layout Inspector, Profiler)
 1. Start a fresh session from the repo root: "Read CLAUDE.md, then do milestone M<n>."
 2. Read [design/README.md](../design/README.md), [SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md) and this milestone.
 3. Build only this milestone's scope. If it won't fit in one session, stop at a working point, split the rest into M<n>b here, and say so.
-4. Pass the **quality gate** in [CLAUDE.md](../CLAUDE.md) and every acceptance criterion below. The last step is always "Install on the phone and verify".
+4. Pass the **quality gate** in [CLAUDE.md](../CLAUDE.md) and every acceptance criterion below. The last step is always "Install on the phone and verify", except in M13, which changes no app code.
 5. Update the status table, add notes under the milestone if something was learned or changed, and ask the owner before committing (`M<n>: <summary>`).
 
 ## Status
@@ -308,6 +308,8 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 
 **Goal:** a README on GitHub that walks through every feature with screenshots, plus a link to try the prototype in a browser without installing anything.
 
+**GitHub only, not in the app.** This milestone adds no app code: no help screen, no in-app guide, nothing installed on the phone. The phone is used only to take screenshots of the app that already exists.
+
 **Build**
 - `README.md` at the repo root (GitHub shows it on the repo's front page), written for someone who has never seen the app:
   - What the app is and who it's for.
@@ -324,6 +326,6 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [ ] Screenshots show only sample data.
 - [ ] Every image and link in README.md works when viewed on github.com.
 
-**Verify on the phone and on GitHub**
-- [ ] Each walkthrough step matches what the release app does on the phone.
+**Verify on GitHub** (nothing is installed on the phone in this milestone)
+- [ ] Each walkthrough step matches what the release app already does on the phone.
 - [ ] The owner opens the README on github.com and runs the browser demo from the Pages link on another device.

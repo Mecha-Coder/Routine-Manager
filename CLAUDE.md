@@ -18,6 +18,10 @@ Personal Android app for one user, sideloaded on a Samsung Galaxy A07. The phone
 - `temp/`: scratch files. Verification screenshots go in `temp/screenshot/`, which git ignores.
 - GitHub: `origin` = https://github.com/Mecha-Coder/Routine-Manager (public).
 
+## Git identity
+
+This is a personal project. Commit and push only as **Mecha-Coder** (set in this repo's local git config, with GitHub's no-reply email). Never use any other GitHub account or a work email. If `gh auth status` shows another account as active, run `gh auth switch -u Mecha-Coder` first.
+
 ## Environment
 
 - `JAVA_HOME` (Android Studio's bundled JDK) and `ANDROID_HOME` are set in `~/.zshrc`. If `java` or `adb` isn't found, VS Code was started before `~/.zshrc` changed: restart VS Code.

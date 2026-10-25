@@ -51,7 +51,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D19 | Clock and language | Always 12-hour (README format), whatever the phone's 24-hour setting. English only. | Confirms |
 | D20 | Project "done" | A 24-hour run on the phone (§5). | Adds |
 | D21 | Build order | Dashboard first, then lists, then settings and sound, then the timetable editor, then icon, release and user guide. See [BUILD_PLAN.md](BUILD_PLAN.md). | Plan |
-| D22 | User guide | A root `README.md` walks through every feature with phone screenshots and links to the prototype on GitHub Pages so people can try it in a browser (M13). | Adds |
+| D22 | User guide | A root `README.md` walks through every feature with phone screenshots and links to the prototype on GitHub Pages so people can try it in a browser (M13). It lives on GitHub only; the app gets no help screen. | Adds |
 
 ## 3. Detailed rules
 
