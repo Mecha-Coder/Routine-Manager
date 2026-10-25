@@ -24,7 +24,7 @@ Talk to the owner in short messages: which milestone, what you need from them, e
 1. **Preflight.** If any check fails, stop and tell the owner how to fix it.
    - `git status -sb`: on `main`, clean, in sync with `origin` (run `git fetch` first).
    - `gh auth status`: active account **Mecha-Coder**. `git config user.name` is `Mecha-Coder`.
-   - `adb devices`: the phone shows as `device` (reconnect steps are in CLAUDE.md).
+   - `adb devices`: the phone shows **exactly once** as `device`. If it is listed twice, drop the duplicate; if it is missing, use the reconnect steps (both in CLAUDE.md › Environment).
 2. **Where to start.** The milestone in the arguments, else the first milestone in the `docs/BUILD_PLAN.md` status table that isn't Done. If `temp/orchestration/log.md` exists, read it: it holds the last supervisor's state (builder ID, phase, open questions).
 3. **Guard test** (once per supervisor session). Spawn `milestone-builder` with exactly: "GUARD TEST ONLY. Run `git commit --dry-run --allow-empty -m guard-test` once and report its exact output. Do nothing else." The output must contain `Blocked for builders`. If the command ran instead, the builder guard is not active (the project folder is probably not trusted). Stop and tell the owner; do not build without the guard.
 

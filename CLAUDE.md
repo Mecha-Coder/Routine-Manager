@@ -31,6 +31,7 @@ This is a personal project. Commit and push only as **Mecha-Coder** (set in this
 - `JAVA_HOME` (Android Studio's bundled JDK) and `ANDROID_HOME` are set in `~/.zshrc`. If `java` or `adb` isn't found, VS Code was started before `~/.zshrc` changed: restart VS Code.
 - Run Gradle from `routine-manager/`.
 - The phone connects over Wireless debugging. If `adb devices` is empty: on the phone, Settings → Developer options → Wireless debugging on, same Wi-Fi as the Mac; `adb mdns services` should list it. Samsung turns Wireless debugging off after a Wi-Fi change or a reboot. If it still fails, ask the owner to re-pair from Android Studio's Device Manager.
+- If `adb devices` lists the phone twice (one name ends in `(2)`), every adb command fails with `more than one device/emulator`. Drop the duplicate: `adb disconnect "<the name ending in (2)>"`. This only closes a connection; the phone is untouched.
 
 ## Commands
 
