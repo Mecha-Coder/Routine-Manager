@@ -1,7 +1,13 @@
 package com.jsk.routinemanager.data
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import java.util.UUID
 
 const val SCHEMA_VERSION = 1
@@ -37,11 +43,31 @@ enum class Theme {
     @SerialName("dark") DARK,
 }
 
-@Serializable
-enum class Tone {
-    @SerialName("bowl") BOWL,
-    @SerialName("chime") CHIME,
-    @SerialName("pad") PAD,
+/** In Settings row order. [key] is the name saved in the file. */
+@Serializable(with = ToneSerializer::class)
+enum class Tone(val key: String) {
+    MARIMBA("marimba"),
+    CHIME("chime"),
+    STEEL_DRUM("steel_drum"),
+}
+
+/**
+ * Saves a [Tone] by its key, and still reads the keys of the two tones M8b replaced (SPEC D25):
+ * `bowl` is now Marimba and `pad` Steel drum, each in the replaced tone's row. A custom serializer
+ * because `@JsonNames` still needs an experimental opt-in (kotlinx.serialization 1.12.0).
+ */
+object ToneSerializer : KSerializer<Tone> {
+    private val replacedKeys = mapOf("bowl" to Tone.MARIMBA, "pad" to Tone.STEEL_DRUM)
+
+    override val descriptor = PrimitiveSerialDescriptor("com.jsk.routinemanager.data.Tone", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: Tone) = encoder.encodeString(value.key)
+
+    override fun deserialize(decoder: Decoder): Tone {
+        val key = decoder.decodeString()
+        return Tone.entries.firstOrNull { it.key == key } ?: replacedKeys[key]
+            ?: throw SerializationException("Unknown tone \"$key\"")
+    }
 }
 
 /**

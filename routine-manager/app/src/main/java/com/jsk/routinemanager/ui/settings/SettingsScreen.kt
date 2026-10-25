@@ -73,16 +73,16 @@ private val THEMES = listOf(Theme.LIGHT to Segment(R.drawable.ic_light_mode, "Li
 
 private val Tone.label: String
     get() = when (this) {
-        Tone.BOWL -> "Singing bowl"
+        Tone.MARIMBA -> "Marimba"
         Tone.CHIME -> "Soft chime"
-        Tone.PAD -> "Warm pad"
+        Tone.STEEL_DRUM -> "Steel drum"
     }
 
 private val Tone.description: String
     get() = when (this) {
-        Tone.BOWL -> "Deep tone, slow fade"
+        Tone.MARIMBA -> "Wooden notes, rising"
         Tone.CHIME -> "Gentle bell notes"
-        Tone.PAD -> "Airy chord swell"
+        Tone.STEEL_DRUM -> "Bright two-note ping"
     }
 
 /**

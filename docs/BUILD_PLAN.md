@@ -24,7 +24,7 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 | M6 List edit mode | Done |
 | M7 Drag: indent and reorder | Not started |
 | M8 Settings and sound | Done |
-| M8b Two replacement tones | Not started |
+| M8b Two replacement tones | Done |
 | M9 Weekly timetable | Not started |
 | M10 Block editor dialog | Not started |
 | M11 App icon | Done |
@@ -476,12 +476,59 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - Replace the two OGGs and their Settings labels; keep the saved `tone` keys working (an old saved key maps to its replacement). Loudness as SPEC §3.1 (plain gain, true peak ≤ −1 dBTP), similar to Soft chime.
 
 **Acceptance criteria**
-- [ ] The owner picked both sounds by ear; sources and licences are in the notes.
-- [ ] The sounds still add less than 0.5 MB in total.
-- [ ] A saved `bowl` or `pad` setting still loads and plays its replacement.
+- [x] The owner picked both sounds by ear; sources and licences are in the notes.
+- [x] The sounds still add less than 0.5 MB in total. (70 KB.)
+- [x] A saved `bowl` or `pad` setting still loads and plays its replacement. (Unit test for both; on the phone with `bowl`, see notes.)
 
 **Install on the phone and verify**
-- [ ] Each tone previews from Settings; the block-change tone plays the selected one.
+- [x] Each tone previews from Settings; the block-change tone plays the selected one.
+
+**Notes**
+- **Owner's pick (26 Oct, by ear on the phone, from six candidates):**
+  - **Marimba** ("Wooden notes, rising") replaces Singing bowl: row 1, and a saved `bowl` loads as Marimba.
+  - **Steel drum** ("Bright two-note ping") replaces Warm pad: row 3, and a saved `pad` loads as Steel drum.
+  - Soft chime stays in row 2 and is still the default.
+  - Not picked: Doorbell, Kalimba, Electric piano, Harp.
+- **Why the bowl and the pad were missed:** a phone speaker loses most of the sound below about 700 Hz. Loudness after a 700 Hz high-pass (`highpass=f=700,highpass=f=700,ebur128`), a rough speaker model: Soft chime −16.1 LUFS, Singing bowl −36.9, Warm pad −38.9. So every candidate keeps its notes at 700–1320 Hz.
+- **Source and licence:** synthesised for this project by `make_candidates.py` (Python 3.9 standard library, ffmpeg 8.1.2). No third-party audio, so there is no licence to record. The script, all six candidates (OGG and WAV) and `candidates.txt` are in `temp/orchestration/m8b-candidates/`, which git ignores. A re-run gives identical decoded audio.
+- **Synth (the prototype's `note()` idea):**
+  - Each note is a sum of exponentially decaying sines with a raised-cosine attack, plus a few ms of low-passed noise for the mallet.
+  - A small mono Freeverb-style room (6 combs, 2 allpasses) is mixed in at −13 dB relative to the dry signal.
+  - A 150 ms fade at the end.
+  - Marimba: G5, C6, E6 at 0, 0.15 and 0.30 s (velocity 0.8, 0.85, 1.0). Partials 1× (τ = 0.55 s × √(659 Hz / f)), 3.93× (0.30, τ 90 ms) and 10× (0.05, τ 20 ms); 1.5 ms attack.
+  - Steel drum: G5 at 0 s, C6 at 0.18 s (0.85, 1.0). Partials 1× (τ 0.65 s), 2× (0.35, τ 0.45 s, 12 ms attack) with a +1.5 Hz twin (0.25) for shimmer, 3× (0.22, τ 0.22 s) and 4× (0.07, τ 0.10 s).
+- **Levelling (SPEC §3.1):** plain gain only, to −14 LUFS, or less if the OGG's true peak would pass −1 dBTP. Encoded with libvorbis `-q:a 4`, mono, 44.1 kHz, `-map_metadata -1`.
+
+  | File | Length | Integrated | True peak | Above 700 Hz | Bytes |
+  |---|---|---|---|---|---|
+  | `marimba.ogg` | 2.2 s | −14.0 LUFS | −1.0 dBTP (−1.04 at 4× oversampling) | −15.5 LUFS | 9,817 |
+  | `soft_chime.ogg` (unchanged) | 10.4 s | −14.0 LUFS | −2.8 dBTP | −16.1 LUFS | 50,341 |
+  | `steel_drum.ogg` | 2.2 s | −14.0 LUFS | −1.4 dBTP | −15.6 LUFS | 11,540 |
+
+  Loudness range reads 0.0 LU for the 2.2 s files, because LRA needs at least 3 s of audio.
+- **Size:** the three sounds are 71,698 bytes, down from 160,619, and stored uncompressed in the APK. Release APK (unsigned): 3,294,598 bytes.
+- **Files:** `res/raw/singing_bowl.ogg` and `warm_pad.ogg` are removed; `design/` keeps the original WAVs.
+- **Saved keys:**
+  - `Tone` holds its saved key (`marimba`, `chime`, `steel_drum`). The enum order is the Settings row order.
+  - `ToneSerializer` in `data/Model.kt` writes the key, and also reads `bowl` as Marimba and `pad` as Steel drum. The next save writes the new key.
+  - It is a custom serializer because `@JsonNames` is still `@ExperimentalSerializationApi` in kotlinx.serialization 1.12.0 (checked in the jar).
+  - An unknown key still makes the file unreadable (corruption handler), as with the generated enum serializer before.
+- **Unit tests:** 109. Two are new in `AppDataJsonTest`:
+  - `everyToneIsSavedUnderItsOwnKeyAndReadBack`
+  - `aSavedBowlOrPadLoadsAsItsReplacementInsteadOfResettingAllData`
+  
+  Lint: 0 errors, the 2 accepted warnings. `assembleRelease` builds.
+- **Phone, 26 Oct (debug build, landscape, real Bedtime):** all checks were silent, with the app volume at 0 before any sound. Which file played was read from `dumpsys media.extractor`: its source is the APK at the OGG's offset and length (9,817 = marimba, 11,540 = steel drum, 50,341 = chime).
+  - **Old key:** with the app stopped, the saved `"tone":"chime"` was changed to `"bowl"` with `run-as sed` (supervisor's OK). On launch the file loaded, with the lists kept and no corrupt copy. Settings showed Marimba selected (`m8b-settings-bowl-key.png`), and the next save wrote `"tone":"marimba"`.
+  - **Previews:** each row played its own file, with focus `USAGE_MEDIA/CONTENT_TYPE_SONIFICATION`:
+    - Marimba: 2,200,000 µs; focus 01:05:55.367 → abandoned 01:05:57.860.
+    - Steel drum: 2,200,000 µs; focus 01:06:10.631 → abandoned 01:06:13.115.
+    - Soft chime: 10,400,000 µs; track gain `-inf` at volume 0. Stop released it 2.45 s in.
+  - **Block-change tone,** debug clock paused:
+    - Steel drum selected, Mon 01:06 (Bedtime) → 09:01 (Work Session1): focus 419 ms after the touch down, file 11,540.
+    - Marimba selected, 09:01 → 12:31 (Lunch): focus 398 ms after the touch down, file 9,817, released 2.45 s later.
+    - Back to Live (Bedtime): no focus request.
+  - **No crashes or ANRs:** crash buffer, logcat and dropbox. Left on the live dashboard with Soft chime, 60 %, light theme (`m8b-settings-final.png`, `m8b-home-final.png`). Battery simulation was not used.
 
 ---
 

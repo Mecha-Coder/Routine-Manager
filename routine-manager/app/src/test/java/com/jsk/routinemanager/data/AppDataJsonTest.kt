@@ -23,7 +23,7 @@ class AppDataJsonTest {
     val tmp = TemporaryFolder()
 
     private val everyFieldSet = AppData(
-        settings = Settings(theme = Theme.DARK, tone = Tone.PAD, volume = 35),
+        settings = Settings(theme = Theme.DARK, tone = Tone.STEEL_DRUM, volume = 35),
         todo = listOf(
             OutlineItem("t1", "Parent", depth = 0, done = false),
             OutlineItem("t2", "Child – “quoted” ×", depth = 1, done = true),
@@ -54,8 +54,35 @@ class AppDataJsonTest {
     fun fileUsesTheReadmeDataModelNames() {
         // The README's names (and SPEC's groupId), so the file can be read and fixed by hand.
         val json = encode(everyFieldSet).decodeToString()
-        for (part in listOf("\"schemaVersion\":1", "\"theme\":\"dark\"", "\"tone\":\"pad\"", "\"groupId\":\"g1\"", "\"collapsed\":true", "\"on\":true")) {
+        for (part in listOf("\"schemaVersion\":1", "\"theme\":\"dark\"", "\"tone\":\"steel_drum\"", "\"groupId\":\"g1\"", "\"collapsed\":true", "\"on\":true")) {
             assertTrue(part, part in json)
+        }
+    }
+
+    @Test
+    fun everyToneIsSavedUnderItsOwnKeyAndReadBack() {
+        // The tone has a hand-written serializer, so a typo or a shared key would silently swap the
+        // owner's choice on the next launch.
+        for (tone in Tone.entries) {
+            val data = AppData(settings = Settings(tone = tone))
+            assertTrue(tone.name, "\"tone\":\"${tone.key}\"" in encode(data).decodeToString())
+            assertEquals(tone, decode(encode(data)).settings.tone)
+        }
+        assertEquals(Tone.entries.size, Tone.entries.map { it.key }.toSet().size)
+    }
+
+    @Test
+    fun aSavedBowlOrPadLoadsAsItsReplacementInsteadOfResettingAllData() {
+        // M8b replaced Singing bowl and Warm pad (SPEC D25). A file saved before that still says
+        // "bowl" or "pad". If it couldn't be read, the corruption handler would replace the owner's
+        // lists with sample data; instead it loads, with the new tone from the same Settings row.
+        val before = """{"settings":{"theme":"dark","tone":"%s","volume":35},"todo":[{"id":"a","text":"x"}]}"""
+        for ((oldKey, replacement) in listOf("bowl" to Tone.MARIMBA, "pad" to Tone.STEEL_DRUM)) {
+            val loaded = decode(before.format(oldKey).encodeToByteArray())
+            assertEquals(Settings(Theme.DARK, replacement, 35), loaded.settings)
+            assertEquals(listOf(OutlineItem("a", "x")), loaded.todo)
+            // The next save writes the new key.
+            assertTrue("\"tone\":\"${replacement.key}\"" in encode(loaded).decodeToString())
         }
     }
 

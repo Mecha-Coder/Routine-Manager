@@ -55,7 +55,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D22 | User guide | A root `README.md` walks through every feature with phone screenshots and links to the prototype on GitHub Pages so people can try it in a browser (M13). It lives on GitHub only; the app gets no help screen. | Adds |
 | D23 | Kotlin version | Kotlin **2.4.21**, up from the wizard's 2.2.10, so the serialization plugin and `kotlinx-serialization-json` can be current. The Compose compiler and serialization plugins use the same version. (Owner, M1.) | Adds |
 | D24 | App icon | Concept C: "07:05" in Google Sans Flex above the dashboard's progress bar. The icon follows the phone's dark mode, inverted for contrast: phone in **dark** mode → **light** icon (off-white `#E6E6E6`, black `#0F0F0F`, cobalt `#2952E6`); phone in **light** mode → **dark** icon (black `#000000`, `#EDEDED`, mint `#4DE0A6`). Shape: the launcher's own rounded square, full-bleed background. (A round disc was tried: this phone's launcher keeps its squircle and fills the clear corners with black, so the owner chose the rounded square.) The debug icon is the same plus a `bug_report` badge, also on the monochrome (themed) layer. (Owner, M11; replaces the first choice of a fixed light release icon and a dark debug icon.) | Adds |
-| D25 | Tones | Default tone is **Soft chime** (new installs and debug reset). Singing bowl and Warm pad are too soft to notice a block change; they get replaced by two crisper sounds the owner picks by ear (M8b). Until then they stay selectable. (Owner, M8.) | Changes (README default bowl) |
+| D25 | Tones | Default tone is **Soft chime** (new installs and debug reset). Singing bowl and Warm pad are too soft to notice a block change; they are replaced by **Marimba** ("Wooden notes, rising", row 1, takes the saved key `bowl`) and **Steel drum** ("Bright two-note ping", row 3, takes `pad`), synthesised for this app and picked by ear by the owner (M8b). Soft chime stays in row 2. (Owner, M8 and M8b.) | Changes (README default bowl) |
 
 ## 3. Detailed rules
 
@@ -67,7 +67,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 - Wait 350 ms after the change, then play only if the key is still the same.
 - **Becoming visible is not a change.** On launch, on return from another app, or when the screen comes back on, the current key becomes the baseline and nothing plays. Block starts missed while the app was hidden are never replayed.
 - **Loudness:** the handoff's WAVs are too quiet on the phone at 100 % (owner, M8). The app's OGG copies are made louder without changing their character: plain gain up to a true peak of −1 dBTP (chime ≈ −14 LUFS, pad ≈ −15.4 LUFS, about +11 dB each); the singing bowl gets plain gain only (+3.8 dB, ≈ −18.4 LUFS), because its strike leaves little headroom and a version with a limiter on the strike sounded wrong to the owner (M8). `design/` keeps the originals.
-- Plays the selected tone file once, start to end (10.4 s). A tone or preview already playing is stopped first.
+- Plays the selected tone file once, start to end (Soft chime 10.4 s; Marimba and Steel drum about 2.2 s). A tone or preview already playing is stopped first.
 - Gain = `(volume/100)² × 0.9` (README). Moving the volume slider changes a playing tone live.
 - While the tone plays, other apps' audio is ducked (lowered), then restored.
 

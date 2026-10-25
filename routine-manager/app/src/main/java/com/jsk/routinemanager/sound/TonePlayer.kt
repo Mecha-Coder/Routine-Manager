@@ -84,7 +84,7 @@ class TonePlayer(context: Context) {
 
 private val Tone.file: Int
     get() = when (this) {
-        Tone.BOWL -> R.raw.singing_bowl
+        Tone.MARIMBA -> R.raw.marimba
         Tone.CHIME -> R.raw.soft_chime
-        Tone.PAD -> R.raw.warm_pad
+        Tone.STEEL_DRUM -> R.raw.steel_drum
     }

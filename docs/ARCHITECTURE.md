@@ -110,7 +110,7 @@ Data flows one way: repository and clock → ViewModels → UI state → composa
 
 ## 7. Sound
 
-- Tone files: `res/raw/singing_bowl.ogg`, `soft_chime.ogg`, `warm_pad.ogg`, converted from `design/assets/sounds/*.wav` with the Mac's ffmpeg (`-c:a libvorbis -q:a 4`; mono, 44.1 kHz, 10.4 s). The WAVs stay in `design/`.
+- Tone files: `res/raw/soft_chime.ogg` (from `design/assets/sounds/soft_chime.wav`, 10.4 s) and two tones synthesised in M8b, Marimba and Steel drum (about 2.2 s; generator script and WAVs outside the repo, see BUILD_PLAN M8b), all encoded with the Mac's ffmpeg (`-c:a libvorbis -q:a 4`; mono, 44.1 kHz) at the loudness in SPEC §3.1. The handoff WAVs stay in `design/`.
 - `TonePlayer` creates a `MediaPlayer` for each play with `AudioAttributes(USAGE_MEDIA, CONTENT_TYPE_SONIFICATION)`, requests `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` (so other audio is lowered), sets `setVolume(gain, gain)`, and releases the player and audio focus when the sound ends or is stopped. `setVolume` also works while playing. It exposes `playing: StateFlow<Boolean>` for the Preview/Stop button.
 - Why `MediaPlayer` and not `SoundPool`: SoundPool keeps each decoded tone in memory (~0.9 MB each). MediaPlayer streams the file and is released after each play, so no audio memory is held between chimes. A 10-second sound doesn't need SoundPool's low start-up delay.
 - `BlockChime` runs while STARTED. On start it takes the current key as the baseline. On a change to a real block it waits 350 ms, checks the key is unchanged, and plays the selected tone (SPEC §3.1).
