@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&amp;display=block">
+<style>
+html,body{margin:0;padding:0;background:#ececec;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+a{color:#111111;} a:hover{color:#5f5f5f;}
+input,select,button{font-family:inherit;}
+::-webkit-scrollbar{width:0;height:0;}
+</style>
+</helmet>
+<div style="min-height:100vh; display:flex; flex-direction:column; align-items:center; gap:16px; padding:16px; font-family:'Google Sans Flex','Google Sans','Noto Sans',system-ui,sans-serif; color:#111111; background:#ececec">
+
+  <sc-if value="{{ showTestBar }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px 12px; padding:8px 12px; background:#ffffff; border:1px solid #e2e2e2; border-radius:16px; font-size:12px; max-width:100%">
+    <span style="font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:.1em; color:#8a8a90">TEST</span>
+    <div style="display:flex; background:#f2f2f2; border-radius:9px; padding:2px; gap:2px">
+      <button onClick="{{ setLandscape }}" style="border:none; height:28px; padding:0 10px; border-radius:7px; display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap; font-size:12px; font-weight:600; color:#111111; background:{{ landBg }}"><span style="font-family:'Material Symbols Rounded'; font-size:17px; line-height:1; font-variation-settings:'FILL' 1">stay_current_landscape</span>Landscape</button>
+      <button onClick="{{ setPortrait }}" style="border:none; height:28px; padding:0 10px; border-radius:7px; display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap; font-size:12px; font-weight:600; color:#111111; background:{{ portBg }}"><span style="font-family:'Material Symbols Rounded'; font-size:17px; line-height:1; font-variation-settings:'FILL' 1">stay_current_portrait</span>Portrait</button>
+    </div>
+    <div style="width:1px; height:22px; background:#e2e2e2"></div>
+    <button onClick="{{ goLive }}" style="border:none; height:28px; padding:0 10px; border-radius:7px; display:flex; align-items:center; gap:6px; cursor:pointer; white-space:nowrap; font-size:12px; font-weight:700; background:{{ liveBg }}; color:{{ liveColor }}"><span style="width:6px; height:6px; border-radius:3px; background:currentColor"></span>Live</button>
+    <div style="display:flex; gap:2px">
+      <sc-for list="{{ simDays }}" as="sd" hint-placeholder-count="7">
+        <button onClick="{{ sd.pick }}" style="width:34px; height:28px; border:none; border-radius:7px; font-size:11px; font-weight:600; cursor:pointer; background:{{ sd.bg }}; color:{{ sd.color }}">{{ sd.label }}</button>
+      </sc-for>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px">
+      <input type="range" min="0" max="1439" step="1" value="{{ simMin }}" onChange="{{ onSlider }}" style="width:170px; accent-color:#111111">
+      <span style="font-family:'JetBrains Mono', monospace; font-size:11px; min-width:66px">{{ simLabel }}</span>
+    </div>
+    <div style="display:flex; background:#f2f2f2; border-radius:9px; padding:2px; gap:2px">
+      <sc-for list="{{ speeds }}" as="sp" hint-placeholder-count="4">
+        <button onClick="{{ sp.pick }}" style="border:none; height:28px; padding:0 9px; border-radius:7px; cursor:pointer; white-space:nowrap; font-size:11px; font-weight:700; background:{{ sp.bg }}; color:{{ sp.color }}">{{ sp.label }}</button>
+      </sc-for>
+    </div>
+    <div style="width:1px; height:22px; background:#e2e2e2"></div>
+    <button onClick="{{ resetAll }}" style="border:1px solid #e2e2e2; background:#ffffff; height:28px; padding:0 10px; border-radius:7px; display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap; font-size:12px; font-weight:600; color:#111111" style-hover="background:#f4f4f6"><span style="font-family:'Material Symbols Rounded'; font-size:17px; line-height:1">restart_alt</span>Reset data</button>
+  </div>
+  </sc-if>
+
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute; width:0; height:0"><filter id="darkTone" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table" tableValues="0.95 0.94 0.91 0.88 0.85 0.81 0.77 0.72 0.67 0.62 0.57 0.52 0.47 0.43 0.38 0.34 0.30 0.26 0.21 0.15 0"></feFuncR><feFuncG type="table" tableValues="0.95 0.94 0.91 0.88 0.85 0.81 0.77 0.72 0.67 0.62 0.57 0.52 0.47 0.43 0.38 0.34 0.30 0.26 0.21 0.15 0"></feFuncG><feFuncB type="table" tableValues="0.95 0.94 0.91 0.88 0.85 0.81 0.77 0.72 0.67 0.62 0.57 0.52 0.47 0.43 0.38 0.34 0.30 0.26 0.21 0.15 0"></feFuncB></feComponentTransfer></filter><filter id="keepColor" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table" tableValues="1.000 0.983 0.967 0.950 0.908 0.860 0.800 0.738 0.680 0.625 0.570 0.520 0.470 0.420 0.370 0.320 0.263 0.200 0.117 0.000 0.000"></feFuncR><feFuncG type="table" tableValues="1.000 0.983 0.967 0.950 0.908 0.860 0.800 0.738 0.680 0.625 0.570 0.520 0.470 0.420 0.370 0.320 0.263 0.200 0.117 0.000 0.000"></feFuncG><feFuncB type="table" tableValues="1.000 0.983 0.967 0.950 0.908 0.860 0.800 0.738 0.680 0.625 0.570 0.520 0.470 0.420 0.370 0.320 0.263 0.200 0.117 0.000 0.000"></feFuncB></feComponentTransfer></filter></svg>
+  <div style="position:relative; flex:none; width:{{ wrapW }}; height:{{ wrapH }}">
+    <div style="position:absolute; left:0; top:0; transform-origin:0 0; padding:10px; border-radius:50px; background:#111111; box-shadow:inset 0 0 0 1.5px #3a3a3a, 0 30px 70px rgba(0,0,0,.18); transform:{{ scaleTf }}">
+      <div style="position:relative; overflow:hidden; border-radius:40px; background:#ffffff; color:#111111; display:flex; width:{{ screenW }}; height:{{ screenH }}; filter:{{ screenFilter }}">
+
+        <sc-if value="{{ isLandscape }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:0 0 60%; min-width:0; position:relative; display:flex; flex-direction:column; padding:28px 30px 22px 42px">
+          <div style="position:absolute; right:0; top:28px; bottom:28px; width:1px; background:#e6e6e6"></div>
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px">
+            <div style="display:flex; align-items:flex-start; gap:8px">
+              <div style="font-size:104px; font-weight:500; line-height:.84; letter-spacing:-4px; font-variant-numeric:tabular-nums">{{ clockTime }}</div>
+              <div style="font-size:20px; font-weight:500; color:#5f5f5f; margin-top:2px">{{ clockAp }}</div>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:12px; padding-top:2px">
+              <div style="font-size:21px; font-weight:600">{{ dayName }}</div>
+              <div style="font-size:21px; font-weight:400; color:#5f5f5f; white-space:nowrap">{{ dateStr }}</div>
+            </div>
+          </div>
+          <sc-if value="{{ hasBar }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px; display:flex; align-items:center; justify-content:space-between; gap:12px">
+            <div style="display:flex; align-items:center; gap:8px; flex:none">
+              <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:22px; font-variation-settings:'FILL' 1">schedule</span>
+              <span style="font-size:20px; font-weight:600">Routine</span>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:8px; white-space:nowrap"><span style="font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#5f5f5f">Left</span><span style="font-size:17px; font-weight:600; font-variant-numeric:tabular-nums">{{ leftStr }}</span></div>
+          </div>
+          <div style="margin-top:8px; height:10px; display:flex; align-items:center; gap:4px; flex:none; overflow:hidden">
+            <div style="height:10px; flex:none; border-radius:5px; background:{{ acc }}; filter:{{ keepF }}; width:{{ progressPct }}"></div>
+            <div style="height:10px; flex:1; min-width:10px; border-radius:5px; background:#e6e6e6; position:relative"><span style="position:absolute; right:3px; top:3px; width:4px; height:4px; border-radius:2px; background:#111111"></span></div>
+          </div>
+          <div style="margin-top:6px; display:flex; justify-content:space-between; align-items:baseline">
+            <div style="display:flex; align-items:baseline; gap:3px"><span style="font-size:20px; font-weight:600; font-variant-numeric:tabular-nums">{{ startT }}</span><span style="font-size:12px; font-weight:600; color:#5f5f5f">{{ startAp }}</span></div>
+            <div style="display:flex; align-items:baseline; gap:3px"><span style="font-size:20px; font-weight:600; font-variant-numeric:tabular-nums">{{ endT }}</span><span style="font-size:12px; font-weight:600; color:#5f5f5f">{{ endAp }}</span></div>
+          </div>
+          <div style="margin-top:20px; height:132px; flex:none; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:20px">
+            <div style="min-height:0; display:flex; flex-direction:column; justify-content:space-between; font-size:17px; line-height:1.3">
+              <sc-for list="{{ subs }}" as="s" hint-placeholder-count="5">
+                <div style="height:1.3em; display:flex; align-items:center; gap:12px; min-width:0">
+                  <sc-if value="{{ s.has }}"><span style="width:5px; height:5px; flex:none; border-radius:50%; background:#111111"></span></sc-if>
+                  <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ s.text }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex; flex-direction:column; justify-content:space-between; text-align:right">
+              <div style="display:flex; flex-direction:column; gap:3px"><div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#5f5f5f"><span style="width:7px; height:7px; border-radius:50%; background:{{ acc }}; filter:{{ keepF }}"></span>Current</div><div style="font-size:19px; font-weight:700; line-height:1.15; white-space:nowrap; max-width:190px; overflow:hidden; text-overflow:ellipsis">{{ blockTitle }}</div></div>
+              <div style="display:flex; flex-direction:column; gap:3px"><div style="font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#5f5f5f">Next</div><div style="font-size:19px; font-weight:700; line-height:1.15; white-space:nowrap; max-width:190px; overflow:hidden; text-overflow:ellipsis">{{ nextTitle }}</div></div>
+            </div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ isBed }}">
+          <div style="flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center">
+            <div style="display:flex; align-items:center; justify-content:center; gap:6px; color:#5f5f5f">
+              <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px; font-variation-settings:'FILL' 1">schedule</span>
+              <span style="font-size:16px; font-weight:600">Routine</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px">
+              <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:26px; font-variation-settings:'FILL' 1">bedtime</span>
+              <div style="font-size:22px; font-weight:600; line-height:1.2">Bedtime, see you tomorrow</div>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <div ref="{{ paneRef }}" style="flex:1 1 0; min-width:0; position:relative; display:flex; flex-direction:column">
+          <sc-if value="{{ hasDragGhost }}">
+            <div style="position:absolute; z-index:20; pointer-events:none; height:42px; display:flex; align-items:center; gap:8px; padding:0 14px 0 10px; background:#ffffff; border:1px solid #e2e2e2; border-radius:14px; box-shadow:{{ ghostShadow }}; transform:{{ ghostScale }}; transition:{{ ghostTrans }}; top:{{ ghostTop }}; left:{{ ghostLeft }}; width:{{ ghostW }}">
+              <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px; color:#111111">drag_indicator</span>
+              <span style="flex:none; font-size:16px; color:#5f5f5f; font-variant-numeric:tabular-nums">{{ ghostNum }}</span><span style="flex:1; min-width:0; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-decoration:{{ ghostDeco }}">{{ ghostText }}</span>
+              <span style="font-size:12px; color:#5f5f5f; white-space:nowrap">{{ ghostMore }}</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showMenu }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 14px 6px 30px; flex:none">
+              <div style="font-size:22px; font-weight:500">Lists</div>
+              <button onClick="{{ openSettings }}" aria-label="Settings" style="width:48px; height:48px; flex:none; border:none; background:transparent; border-radius:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0" style-hover="background:#f0f0f0" style-active="background:#e6e6e6"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:24px">settings</span></button>
+            </div>
+            <div style="flex:1; min-height:0; overflow-y:auto; padding:8px 22px 24px 24px">
+              <div style="display:flex; flex-direction:column; gap:2px; border-radius:24px; overflow:hidden">
+                <sc-for list="{{ lists }}" as="l" hint-placeholder-count="4">
+                  <button onClick="{{ l.open }}" style="display:flex; align-items:center; gap:16px; height:60px; padding:0 16px 0 18px; border:none; background:#f3f3f3; border-radius:6px; cursor:pointer; color:#111111; text-align:left" style-hover="background:#ebebeb" style-active="background:#e2e2e2">
+                    <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:24px; font-variation-settings:'FILL' 1">{{ l.icon }}</span>
+                    <span style="flex:1; min-width:0; font-size:17px; font-weight:500">{{ l.label }}</span>
+                    <sc-if value="{{ l.hasBadge }}"><span style="min-width:26px; height:26px; padding:0 8px; flex:none; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; background:{{ l.badgeBg }}; color:{{ l.badgeInk }}; filter:{{ l.badgeF }}">{{ l.count }}</span></sc-if>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showDetail }}">
+            <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; padding:16px 14px 6px 14px; flex:none">
+              <div style="justify-self:start"><button onClick="{{ closeList }}" aria-label="Back" style="width:48px; height:48px; flex:none; border:none; background:transparent; border-radius:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0" style-hover="background:#f0f0f0" style-active="background:#e6e6e6"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:24px">arrow_back</span></button></div>
+              <div style="font-size:20px; font-weight:500; text-align:center; white-space:nowrap">{{ curLabel }}</div>
+              <div style="justify-self:end; display:flex; align-items:center; gap:4px">
+                <sc-if value="{{ notEditing }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ toggleEdit }}" aria-label="Edit list" style="width:48px; height:48px; flex:none; border:none; background:transparent; border-radius:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0" style-hover="background:#f0f0f0" style-active="background:#e6e6e6"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:22px">edit</span></button>
+                </sc-if>
+                <sc-if value="{{ editing }}">
+                  <button onClick="{{ toggleEdit }}" aria-label="Done editing" style="width:40px; height:40px; margin:4px; flex:none; border:none; border-radius:20px; background:#111111; color:#ffffff; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0" style-hover="background:#333333"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:22px; font-variation-settings:'wght' 600">check</span></button>
+                </sc-if>
+              </div>
+            </div>
+
+            <div style="flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:4px 26px 24px 30px; display:flex; flex-direction:column">
+
+              <sc-if value="{{ viewTodo }}">
+                <sc-for list="{{ todos }}" as="t" hint-placeholder-count="5">
+                  <div onClick="{{ t.onTap }}" style="min-height:44px; display:flex; align-items:center; cursor:{{ t.tapCursor }}; user-select:none; padding-left:{{ t.padView }}">
+                    <span style="flex:none; min-width:{{ t.numW }}; font-size:16px; font-variant-numeric:tabular-nums; color:#5f5f5f; padding-right:8px">{{ t.num }}</span><div style="flex:1; min-width:0; font-size:16px; line-height:1.35; padding:9px 0; text-decoration:{{ t.deco }}; color:{{ t.color }}">{{ t.text }}</div>
+                  </div>
+                </sc-for>
+              </sc-if>
+
+              <sc-if value="{{ editTodo }}">
+                <sc-for list="{{ todos }}" as="t">
+                  <div data-todo-row="1" style="min-height:44px; display:flex; align-items:center; gap:2px; margin:0 -8px 0 -30px; padding-right:8px; border-radius:12px; position:relative; opacity:{{ t.dragOp }}; transform:{{ t.shift }}; transition:{{ t.shiftTrans }}; padding-left:{{ t.padDrag }}; background:{{ t.dragBg }}; box-shadow:{{ t.dragShadow }}">
+                    <span onPointerDown="{{ t.dDown }}" onPointerMove="{{ dMove }}" onPointerUp="{{ dUp }}" onPointerCancel="{{ dUp }}" aria-label="Drag to move or indent" style="width:28px; height:44px; flex:none; display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; cursor:grab; color:#8e8e8e; font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">drag_indicator</span>
+                    <span style="flex:none; min-width:{{ t.numW }}; font-size:16px; font-variant-numeric:tabular-nums; color:#5f5f5f; padding-right:8px">{{ t.num }}</span><input value="{{ t.text }}" onChange="{{ t.onEdit }}" onKeyDown="{{ t.onKey }}" autoFocus="{{ t.autoFocus }}" placeholder="{{ newPh }}" style="flex:1; min-width:0; border:none; border-bottom:1px solid #dedede; background:transparent; font-size:16px; color:#111111; padding:9px 0; outline:none; text-decoration:{{ t.deco }}" style-focus="border-bottom-color:#111111">
+                    <button onClick="{{ t.onDel }}" aria-label="Delete" style="width:40px; height:40px; flex:none; border:none; background:transparent; border-radius:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0; color:#5f5f5f" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">close</span></button>
+                  </div>
+                </sc-for>
+                <button onClick="{{ addTodo }}" style="display:flex; align-items:center; gap:8px; height:40px; margin-top:4px; margin-left:-12px; padding:0 16px 0 12px; border:none; border-radius:20px; background:transparent; color:#111111; font-size:15px; font-weight:600; cursor:pointer; align-self:flex-start" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">add</span>{{ addLabel }}</button>
+              </sc-if>
+
+              <sc-if value="{{ viewGrocery }}">
+                <div style="display:flex; flex-direction:column; gap:14px">
+                  <sc-for list="{{ cats }}" as="c" hint-placeholder-count="2">
+                    <div>
+                      <div onClick="{{ c.onCollapse }}" role="button" aria-expanded="{{ c.expanded }}" style="display:flex; align-items:center; gap:8px; min-height:48px; margin:0 -10px; padding:0 10px; border-radius:14px; cursor:pointer; user-select:none" style-hover="background:#f5f5f5">
+                        <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:22px; width:22px; flex:none; transition:transform .18s ease; transform:{{ c.chev }}">expand_more</span>
+                        <span style="flex:1; min-width:0; font-size:17px; font-weight:600">{{ c.name }}</span>
+                        <span style="min-width:26px; height:26px; padding:0 8px; flex:none; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; background:{{ c.badgeBg }}; color:{{ c.badgeInk }}; filter:{{ c.badgeF }}">{{ c.count }}</span>
+                      </div>
+                      <sc-if value="{{ c.expanded }}">
+                      <sc-for list="{{ c.items }}" as="it">
+                        <div onClick="{{ it.toggle }}" style="display:flex; align-items:center; gap:14px; min-height:42px; padding-left:30px; cursor:pointer; user-select:none">
+                          <span style="width:20px; height:20px; flex:none; border-radius:50%; border:2px solid #111111; display:flex; align-items:center; justify-content:center"><span style="width:10px; height:10px; border-radius:50%; background:{{ it.dot }}"></span></span>
+                          <span style="font-size:16px; font-weight:{{ it.weight }}">{{ it.text }}</span>
+                        </div>
+                      </sc-for>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ editGrocery }}">
+                <div style="display:flex; flex-direction:column; gap:20px">
+                  <sc-for list="{{ cats }}" as="c">
+                    <div style="display:flex; flex-direction:column">
+                      <div style="display:flex; align-items:center; gap:4px">
+                        <input value="{{ c.name }}" onChange="{{ c.onName }}" autoFocus="{{ c.autoFocus }}" placeholder="Category" style="flex:1; min-width:0; border:none; border-bottom:1px solid #dedede; background:transparent; font-size:16px; color:#111111; padding:9px 0; outline:none; font-size:17px; font-weight:600" style-focus="border-bottom-color:#111111">
+                        <button onClick="{{ c.onDel }}" aria-label="Delete" style="width:40px; height:40px; flex:none; border:none; background:transparent; border-radius:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0; color:#5f5f5f" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">delete</span></button>
+                      </div>
+                      <sc-for list="{{ c.items }}" as="it">
+                        <div style="display:flex; align-items:center; gap:12px; min-height:44px; padding-left:30px">
+                          <span style="width:20px; height:20px; flex:none; border-radius:50%; border:2px solid #111111; display:flex; align-items:center; justify-content:center"><span style="width:10px; height:10px; border-radius:50%; background:{{ it.dot }}"></span></span>
+                          <input value="{{ it.text }}" onChange="{{ it.onEdit }}" onKeyDown="{{ it.onKey }}" autoFocus="{{ it.autoFocus }}" placeholder="New item" style="flex:1; min-width:0; border:none; border-bottom:1px solid #dedede; background:transparent; font-size:16px; color:#111111; padding:9px 0; outline:none" style-focus="border-bottom-color:#111111">
+                          <button onClick="{{ it.onDel }}" aria-label="Delete" style="width:40px; height:40px; flex:none; border:none; background:transparent; border-radius:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0; color:#5f5f5f" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">close</span></button>
+                        </div>
+                      </sc-for>
+                      <div style="padding-left:30px; display:flex"><button onClick="{{ c.onAdd }}" style="display:flex; align-items:center; gap:8px; height:40px; margin-top:4px; margin-left:-12px; padding:0 16px 0 12px; border:none; border-radius:20px; background:transparent; color:#111111; font-size:15px; font-weight:600; cursor:pointer; align-self:flex-start" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">add</span>Add item</button></div>
+                    </div>
+                  </sc-for>
+                  <button onClick="{{ addCat }}" style="display:flex; align-items:center; justify-content:center; gap:8px; height:44px; border:1px solid #8e8e8e; border-radius:22px; background:transparent; color:#111111; font-size:15px; font-weight:600; cursor:pointer" style-hover="background:#f5f5f5"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">add</span>Add category</button>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ viewPlain }}">
+                <sc-for list="{{ plain }}" as="p" hint-placeholder-count="3">
+                  <div style="min-height:44px; display:flex; align-items:center; font-size:16px">{{ p.text }}</div>
+                </sc-for>
+              </sc-if>
+
+              <sc-if value="{{ editPlain }}">
+                <sc-for list="{{ plain }}" as="p">
+                  <div style="min-height:44px; display:flex; align-items:center; gap:4px">
+                    <input value="{{ p.text }}" onChange="{{ p.onEdit }}" onKeyDown="{{ p.onKey }}" autoFocus="{{ p.autoFocus }}" placeholder="New item" style="flex:1; min-width:0; border:none; border-bottom:1px solid #dedede; background:transparent; font-size:16px; color:#111111; padding:9px 0; outline:none" style-focus="border-bottom-color:#111111">
+                    <button onClick="{{ p.onDel }}" aria-label="Delete" style="width:40px; height:40px; flex:none; border:none; background:transparent; border-radius:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0; color:#5f5f5f" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">close</span></button>
+                  </div>
+                </sc-for>
+                <button onClick="{{ addPlain }}" style="display:flex; align-items:center; gap:8px; height:40px; margin-top:4px; margin-left:-12px; padding:0 16px 0 12px; border:none; border-radius:20px; background:transparent; color:#111111; font-size:15px; font-weight:600; cursor:pointer; align-self:flex-start" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">add</span>Add item</button>
+              </sc-if>
+
+              <sc-if value="{{ isEmpty }}">
+                <div style="padding-top:18px; color:#5f5f5f; font-size:15px; display:flex; gap:6px; align-items:center">Nothing here. Tap <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:18px">edit</span> to add.</div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ showSettings }}">
+        <div style="position:absolute; inset:0; z-index:5; background:#ffffff; display:flex; flex-direction:column">
+          <div style="display:flex; align-items:center; gap:8px; padding:16px 24px 4px 14px; flex:none">
+            <button onClick="{{ closeSettings }}" aria-label="Back" style="width:48px; height:48px; flex:none; border:none; background:transparent; border-radius:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0" style-hover="background:#f0f0f0" style-active="background:#e6e6e6"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:24px">arrow_back</span></button>
+            <div style="font-size:22px; font-weight:500">Settings</div>
+          </div>
+          <div style="flex:1; min-height:0; overflow-y:auto; padding:4px 32px 14px 32px; display:flex; flex-wrap:wrap; gap:20px 32px; align-content:flex-start">
+            <div style="flex:1 1 260px; min-width:0; display:flex; flex-direction:column; gap:20px">
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#5f5f5f; padding:0 6px 8px">Appearance</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:64px; padding:0 12px 0 18px; background:#f3f3f3; border-radius:24px">
+                  <div style="display:flex; align-items:center; gap:14px"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:22px">contrast</span><span style="font-size:16px; font-weight:500">Theme</span></div>
+                  <div style="display:flex; height:40px; border:1px solid #8e8e8e; border-radius:20px; overflow:hidden; flex:none">
+                    <button onClick="{{ setLight }}" style="height:100%; padding:0 14px; border:none; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:500; cursor:pointer; background:{{ lightBg }}; color:{{ lightColor }}"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:18px; font-variation-settings:'FILL' 1">light_mode</span>Light</button>
+                    <div style="width:1px; background:#8e8e8e"></div>
+                    <button onClick="{{ setDark }}" style="height:100%; padding:0 14px; border:none; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:500; cursor:pointer; background:{{ darkBg }}; color:{{ darkColor }}"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:18px; font-variation-settings:'FILL' 1">dark_mode</span>Dark</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#5f5f5f; padding:0 6px 8px">Routine</div>
+                <button onClick="{{ openRoutine }}" style="width:100%; display:flex; align-items:center; gap:14px; min-height:64px; padding:0 14px 0 18px; border:none; background:#f3f3f3; border-radius:24px; cursor:pointer; text-align:left; color:#111111" style-hover="background:#ebebeb" style-active="background:#e2e2e2">
+                  <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:22px">calendar_view_week</span>
+                  <span style="flex:1; min-width:0; font-size:16px; font-weight:500">Weekly timetable</span>
+                  <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:22px; color:#5f5f5f">chevron_right</span>
+                </button>
+              </div>
+            </div>
+            <div style="flex:1 1 260px; min-width:0; display:flex; flex-direction:column">
+              <div style="font-size:13px; font-weight:600; color:#5f5f5f; padding:0 6px 8px">Block-change sound</div>
+              <div style="display:flex; flex-direction:column; gap:2px; border-radius:24px; overflow:hidden">
+                <sc-for list="{{ tones }}" as="tn" hint-placeholder-count="3">
+                  <button onClick="{{ tn.pick }}" style="width:100%; display:flex; align-items:center; gap:16px; min-height:50px; border:none; border-radius:4px; background:#f3f3f3; padding:5px 18px; text-align:left; cursor:pointer; color:#111111" style-hover="background:#ebebeb">
+                    <span style="width:20px; height:20px; flex:none; border-radius:50%; border:2px solid #111111; display:flex; align-items:center; justify-content:center"><span style="width:10px; height:10px; border-radius:50%; background:{{ tn.dot }}"></span></span>
+                    <span style="display:flex; flex-direction:column; gap:1px">
+                      <span style="font-size:16px; font-weight:{{ tn.weight }}">{{ tn.name }}</span>
+                      <span style="font-size:13px; color:#5f5f5f">{{ tn.desc }}</span>
+                    </span>
+                  </button>
+                </sc-for>
+                <div style="display:flex; align-items:center; gap:12px; min-height:50px; padding:0 18px; background:#f3f3f3; border-radius:4px">
+                  <span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:22px">volume_down</span>
+                  <input type="range" min="0" max="100" step="1" value="{{ volume }}" onChange="{{ onVolume }}" style="flex:1; min-width:0; accent-color:#111111">
+                  <span style="width:40px; text-align:right; font-size:14px; font-weight:500; font-variant-numeric:tabular-nums">{{ volumeLabel }}</span>
+                </div>
+              </div>
+              <button onClick="{{ previewSel }}" style="margin-top:12px; align-self:flex-start; height:40px; padding:0 20px 0 16px; border-radius:20px; border:none; background:#111111; color:#ffffff; font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px; cursor:pointer" style-hover="background:#333333"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px; font-variation-settings:'FILL' 1">{{ previewIcon }}</span>{{ previewLabel }}</button>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ showRoutine }}">
+        <div style="position:absolute; inset:0; z-index:6; background:#ffffff; display:flex; flex-direction:column">
+          <div style="display:flex; align-items:center; gap:8px; padding:12px 22px 0 14px; flex:none">
+            <button onClick="{{ closeRoutine }}" aria-label="Back" style="width:48px; height:48px; flex:none; border:none; background:transparent; border-radius:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0" style-hover="background:#f0f0f0" style-active="background:#e6e6e6"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:24px">arrow_back</span></button>
+            <div style="font-size:22px; font-weight:500; flex:1">Weekly routine</div>
+          </div>
+          <div style="display:flex; padding:6px 14px 8px 10px; flex:none; border-bottom:1px solid #ebebeb">
+            <div style="width:46px; flex:none"></div>
+            <sc-for list="{{ weekCols }}" as="col" hint-placeholder-count="7">
+              <div style="flex:1; min-width:0; display:flex; justify-content:center">
+                <span style="padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; background:{{ col.labelBg }}; color:{{ col.labelColor }}; filter:{{ col.labelF }}">{{ col.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div ref="{{ gridRef }}" style="flex:1; min-height:0; overflow-y:auto; padding:0 14px 0 10px">
+            <div style="display:flex; position:relative; margin:10px 0 14px; height:{{ gridH }}">
+              <div style="width:46px; flex:none; position:relative">
+                <sc-for list="{{ hours }}" as="hr">
+                  <div style="position:absolute; right:8px; transform:translateY(-50%); font-size:10px; font-weight:500; color:#8e8e8e; white-space:nowrap; top:{{ hr.top }}">{{ hr.label }}</div>
+                </sc-for>
+              </div>
+              <sc-for list="{{ weekCols }}" as="col" hint-placeholder-count="7">
+                <div onPointerDown="{{ col.down }}" onPointerMove="{{ colMove }}" onPointerUp="{{ colUp }}" onPointerCancel="{{ colCancel }}" style="flex:1; min-width:0; position:relative; border-left:1px solid #efefef; background-image:linear-gradient(to bottom, #efefef 1px, transparent 1px); cursor:crosshair; touch-action:pan-y; user-select:none; background-size:{{ gridBgSize }}; background-color:{{ col.bg }}">
+                  <sc-for list="{{ col.blocks }}" as="b">
+                    <div onPointerDown="{{ stopProp }}" onClick="{{ b.open }}" style="position:absolute; left:3px; right:3px; border-radius:8px; padding:4px 7px; overflow:hidden; cursor:pointer; font-size:10.5px; line-height:1.25; background:{{ b.bg }}; color:{{ b.color }}; filter:{{ b.f }}; top:{{ b.top }}; height:{{ b.height }}">
+                      <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ b.title }}</div>
+                      <div style="opacity:.72; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ b.range }}</div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ col.hasGhost }}">
+                    <div style="position:absolute; left:3px; right:3px; border:1.5px dashed #111111; background:rgba(0,0,0,.05); border-radius:8px; font-size:10.5px; font-weight:600; padding:4px 7px; pointer-events:none; overflow:hidden; top:{{ col.ghostTop }}; height:{{ col.ghostH }}">{{ col.ghostLabel }}</div>
+                  </sc-if>
+                  <sc-if value="{{ col.isToday }}">
+                    <div style="position:absolute; left:-1px; right:0; height:2px; background:{{ acc }}; pointer-events:none; z-index:2; filter:{{ keepF }}; top:{{ nowTop }}">
+                      <div style="position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:{{ acc }}"></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ sheetOpen }}">
+        <div style="position:absolute; inset:0; z-index:10; display:flex; background:{{ scrim }}; align-items:center; justify-content:center; padding:16px">
+          <div style="width:100%; max-width:600px; max-height:100%; overflow-y:auto; background:#ffffff; border:1px solid #e6e6e6; border-radius:28px; padding:16px 20px 16px; box-shadow:{{ sheetShadow }}">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px">
+              <div style="font-size:20px; font-weight:500">{{ sheetHeading }}</div>
+              <button onClick="{{ closeSheet }}" aria-label="Close" style="width:36px; height:36px; border:1px solid #111111; background:transparent; border-radius:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:20px">close</span></button>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px 22px">
+              <div style="display:flex; flex-direction:column; gap:8px">
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600; color:#5f5f5f">Title
+                  <input value="{{ sheetTitle }}" onChange="{{ onSheetTitle }}" placeholder="e.g. Work Session1" style="height:42px; border:1px solid #bdbdbd; border-radius:12px; padding:0 12px; font-size:15px; font-weight:500; color:#111111; background:transparent; outline:none" style-focus="border-color:#111111; box-shadow:inset 0 0 0 1px #111111">
+                </label>
+                <div style="display:flex; flex-direction:column; gap:4px">
+                  <div style="font-size:12px; font-weight:600; color:#5f5f5f">Days</div>
+                  <div style="display:flex; justify-content:space-between; gap:4px">
+                    <sc-for list="{{ sheetDays }}" as="dc" hint-placeholder-count="7">
+                      <button onClick="{{ dc.toggle }}" aria-label="{{ dc.full }}" style="width:34px; height:34px; flex:none; border-radius:17px; border:1px solid #bdbdbd; font-size:13px; font-weight:600; cursor:pointer; padding:0; background:{{ dc.bg }}; color:{{ dc.color }}">{{ dc.letter }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                  <sc-for list="{{ wheelGroups }}" as="wg" hint-placeholder-count="2">
+                    <div style="display:flex; flex-direction:column; gap:4px; min-width:0">
+                      <div style="font-size:12px; font-weight:600; color:#5f5f5f">{{ wg.label }}</div>
+                      <div style="position:relative; display:flex; align-items:center; justify-content:center; gap:2px; height:74px; box-sizing:border-box; border:1px solid #bdbdbd; border-radius:12px; overflow:hidden; user-select:none">
+                        <div style="position:absolute; left:6px; right:6px; top:24px; height:24px; border-radius:8px; background:#efefef"></div>
+                        <sc-for list="{{ wg.drums }}" as="d">
+                          <sc-if value="{{ d.sep }}"><span style="position:relative; z-index:1; font-size:15px; font-weight:600; color:#111111; margin-top:-2px">:</span></sc-if>
+                          <div ref="{{ d.ref }}" onScroll="{{ d.onScroll }}" aria-label="{{ d.aria }}" style="position:relative; z-index:1; width:36px; height:72px; overflow-y:auto; overflow-x:hidden; scroll-snap-type:y mandatory; scrollbar-width:none; overscroll-behavior:contain; touch-action:pan-y; -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 32%, #000 68%, transparent 100%); mask-image:linear-gradient(to bottom, transparent 0, #000 32%, #000 68%, transparent 100%)">
+                            <div style="height:24px"></div>
+                            <sc-for list="{{ d.items }}" as="wi">
+                              <div onClick="{{ wi.pick }}" style="height:24px; display:flex; align-items:center; justify-content:center; scroll-snap-align:center; font-size:15px; font-variant-numeric:tabular-nums; cursor:pointer; color:{{ wi.color }}; font-weight:{{ wi.weight }}">{{ wi.label }}</div>
+                            </sc-for>
+                            <div style="height:24px"></div>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="height:206px; display:flex; flex-direction:column; overflow:hidden">
+                <div style="font-size:12px; font-weight:600; color:#5f5f5f; height:20px; flex:none">Sub-routines</div>
+                <sc-for list="{{ sheetSubs }}" as="s">
+                  <div style="display:flex; align-items:center; gap:4px; height:36px; flex:none">
+                    <input value="{{ s.text }}" onChange="{{ s.onEdit }}" onKeyDown="{{ s.onKey }}" autoFocus="{{ s.autoFocus }}" placeholder="Sub-routine" style="flex:1; min-width:0; height:36px; border:none; border-bottom:1px solid #dedede; background:transparent; font-size:15px; color:#111111; padding:0; outline:none" style-focus="border-bottom-color:#111111">
+                    <button onClick="{{ s.onDel }}" aria-label="Remove" style="width:34px; height:34px; flex:none; border:none; background:transparent; border-radius:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#111111; padding:0; color:#5f5f5f" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:18px">close</span></button>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ canAddSub }}"><button onClick="{{ addSub }}" style="display:flex; align-items:center; gap:8px; height:36px; flex:none; border:none; background:transparent; color:#111111; font-size:14px; font-weight:600; cursor:pointer; padding:0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:19px">add</span>Add sub-routine</button></sc-if>
+              </div>
+            </div>
+            <sc-if value="{{ hasSheetError }}">
+              <div style="margin-top:10px; font-size:13px; font-weight:600; display:flex; gap:6px; align-items:center"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:18px; font-variation-settings:'FILL' 1; color:{{ acc }}; filter:{{ keepF }}">error</span>{{ sheetError }}</div>
+            </sc-if>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:10px">
+              <sc-if value="{{ sheetIsEdit }}">
+                <button onClick="{{ deleteSheet }}" style="height:40px; padding:0 14px 0 10px; border:none; background:transparent; border-radius:20px; font-size:14px; font-weight:600; color:#111111; display:flex; gap:6px; align-items:center; cursor:pointer" style-hover="background:#f0f0f0"><span style="font-family:'Material Symbols Rounded'; line-height:1; font-size:19px">delete</span>Delete</button>
+              </sc-if>
+              <div style="flex:1"></div>
+              <button onClick="{{ saveSheet }}" style="height:40px; padding:0 24px; border-radius:20px; border:none; background:#111111; color:#ffffff; font-size:14px; font-weight:600; cursor:pointer" style-hover="background:#333333">Save</button>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showTestControls&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;timetableHourHeight&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:44,&quot;min&quot;:28,&quot;max&quot;:72,&quot;step&quot;:2,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;}}">
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DAYS_LONG=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const KEY='dc-routine-lists-v1';
+const INK='#111111';
+const ACC_L='#2D5BFF', ACC_D='#4DE0A6';
+const KEEP='url(#keepColor)';
+const uid=()=>Math.random().toString(36).slice(2,10);
+const pad=n=>String(n).padStart(2,'0');
+const hm=s=>{const p=s.split(':').map(Number);return p[0]*60+p[1];};
+const t12=min=>{const h=Math.floor(min/60)%24,m=Math.floor(min%60);return{t:pad(h%12||12)+':'+pad(m),ap:h<12?'AM':'PM'};};
+const lbl=min=>{const x=t12(min);return x.t.replace(/^0/,'')+' '+x.ap;};
+const short=min=>{const h=Math.floor(min/60)%24,m=min%60;return (h%12||12)+(m?':'+pad(m):'')+(h<12?'a':'p');};
+const dur=m=>{m=Math.max(0,m);const h=Math.floor(m/60),r=m%60;return h?(r?h+'hr '+r+'min':h+'hr'):r+'min';};
+const TONES=[{id:'bowl',name:'Singing bowl',desc:'Deep tone, slow fade'},{id:'chime',name:'Soft chime',desc:'Gentle bell notes'},{id:'pad',name:'Warm pad',desc:'Airy chord swell'}];
+const LISTS=[{key:'todo',label:'To-Do',icon:'format_list_bulleted'},{key:'grocery',label:'Grocery',icon:'shopping_cart'},{key:'self',label:'Self',icon:'person'},{key:'room',label:'Room',icon:'home'}];
+const START_OPTS=[],END_OPTS=[];
+for(let v=0;v<1440;v+=15)START_OPTS.push({v:String(v),label:lbl(v)});
+for(let v=15;v<=1440;v+=15)END_OPTS.push({v:String(v),label:v===1440?'12:00 AM (midnight)':lbl(v)});
+const DAY_OPTS=DAYS_LONG.map((l,i)=>({v:String(i),label:l}));
+const optEls=list=>list.map(o=>React.createElement('option',{key:o.v,value:o.v},o.label));
+const DEF_SET={theme:'light',tone:'bowl',volume:60};
+
+function sample(){
+  const mk=(text,depth,done)=>({id:uid(),text,depth:depth||0,done:!!done});
+  const WD=[['06:00','07:00','Morning',['Wake up','Stretch','Shower','Breakfast']],['07:00','08:00','Commute',['Podcast','Plan the day']],['08:00','12:00','Work Session1',['To-do list','Session + Prompt','Read / Learn','Drink']],['12:00','13:00','Lunch',['Eat','Short walk']],['13:00','17:30','Work Session2',['Session + Prompt','Review','Drink']],['17:30','18:30','Commute',['Music','Pick up groceries']],['18:30','20:00','Dinner & Chores',['Cook','Dishes','Tidy room']],['20:00','22:30','Personal',['Read / Learn','Journal']],['22:30','23:00','Wind down',['Floss teeth','Lights off']]];
+  const WE=[['08:00','09:00','Morning',['Wake up','Stretch','Breakfast']],['09:00','12:00','Work Session1',['To-do list','Session + Prompt','Read / Learn','Drink']],['14:00','17:00','Errands',['Grocery','Clean room']],['19:00','21:30','Personal',['Read / Learn','Call family']],['22:30','23:00','Wind down',['Floss teeth','Lights off']]];
+  const blocks=[];
+  const gWD=WD.map(()=>uid()), gWE=WE.map(()=>uid());
+  for(let d=0;d<7;d++)(d<5?WD:WE).forEach(([s,e,title,subs],k)=>blocks.push({id:uid(),gid:(d<5?gWD:gWE)[k],day:d,start:hm(s),end:hm(e),title,subs:subs.slice()}));
+  return {
+    todo:[mk('Clean room'),mk('Sabah'),mk('Complete places',1),mk('Itinerary',1),mk('Find future room + strategy',0,true)],
+    grocery:[{id:uid(),name:'Toiletries',items:[{id:uid(),text:'Others',on:false},{id:uid(),text:'Chemical',on:true}]},{id:uid(),name:'Food',items:[{id:uid(),text:'Egg',on:false},{id:uid(),text:'Sausage',on:false}]}],
+    self:['Cut Hair','Cut Nail','Floss teeth'].map(text=>({id:uid(),text})),
+    room:['Change bedsheet','Vacuum floor','Water plants'].map(text=>({id:uid(),text})),
+    blocks
+  };
+}
+const subEnd=(arr,i)=>{let j=i+1;while(j<arr.length&&arr[j].depth>arr[i].depth)j++;return j;};
+const normalize=arr=>{let prev=-1;return arr.map(t=>{const d=Math.max(0,Math.min(t.depth,prev+1,1));prev=d;return d===t.depth?t:{...t,depth:d};});};
+
+class Component extends DCLogic {
+  gridRef = React.createRef(); paneRef = React.createRef(); dayRef = React.createRef(); startRef = React.createRef(); endRef = React.createRef();
+  wRefs = {sH:React.createRef(),sM:React.createRef(),sA:React.createRef(),eH:React.createRef(),eM:React.createRef(),eA:React.createRef()}; wBusy = {};
+  state = this.init();
+
+  init(){
+    let sv=null; try{sv=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
+    const data=(sv&&sv.data)||sample(); const gm={};
+    ['self','room'].forEach(k=>{if(data[k])data[k]=data[k].map(x=>x.depth==null?{...x,depth:0}:x);});
+    if(data.todo&&!data.autoNum){data.todo=data.todo.map(t=>({...t,text:t.text.replace(/^\s*\d+(\.\d+)*[).]\s*/,'')}));data.autoNum=true;}
+    data.blocks=data.blocks.map(b=>{if(b.gid)return b;const k=[b.title,b.start,b.end,(b.subs||[]).join('|')].join('#');gm[k]=gm[k]||uid();return{...b,gid:gm[k]};});
+    return {data, settings:Object.assign({},DEF_SET,(sv&&sv.settings)||{}), orient:(sv&&sv.orient)||'landscape',
+      view:'home', list:null, editing:false, focusId:null, clock:{live:true,simAnchor:0,realAnchor:0,speed:1},
+      now:Date.now(), swipe:null, drag:null, sheet:null, playing:false, scale:1};
+  }
+  componentDidMount(){
+    this.lastKey=this.routine(this.simNow()).key;
+    this.timer=setInterval(()=>this.tick(),250);
+    this.onResize=()=>this.fit(); window.addEventListener('resize',this.onResize); this.fit();
+    this.unlock=()=>this.ctx_(); window.addEventListener('pointerdown',this.unlock);
+  }
+  componentWillUnmount(){
+    clearInterval(this.timer); window.removeEventListener('resize',this.onResize); window.removeEventListener('pointerdown',this.unlock);
+    if(this.boundEl)this.boundEl.removeEventListener('touchmove',this.onTouchMove);
+  }
+  componentDidUpdate(){
+    const s=this.state, ps=this._prev||{}, showT=this.props.showTestControls;
+    this._prev={data:s.data,settings:s.settings,orient:s.orient,showT};
+    if(ps.data!==s.data||ps.settings!==s.settings||ps.orient!==s.orient){try{localStorage.setItem(KEY,JSON.stringify({data:s.data,settings:s.settings,orient:s.orient}));}catch(e){}}
+    if(ps.orient!==s.orient||ps.showT!==showT)this.fit();
+    if(s.sheet)this.syncWheels();
+    const el=this.gridRef.current;
+    if(el&&el!==this.boundEl){
+      if(this.boundEl)this.boundEl.removeEventListener('touchmove',this.onTouchMove);
+      this.onTouchMove=this.onTouchMove||(e=>{if(this.dg)e.preventDefault();});
+      el.addEventListener('touchmove',this.onTouchMove,{passive:false}); this.boundEl=el;
+      const d=new Date(s.now); el.scrollTop=Math.max(0,(d.getHours()+d.getMinutes()/60-1.5)*this.hp());
+    }
+    if(!el)this.boundEl=null;
+  }
+  hp(){return this.props.timetableHourHeight??44;}
+  fit(){
+    const L=this.state.orient==='landscape', w=L?900:416, h=L?416:900, top=(this.props.showTestControls??true)?150:40;
+    const s=Math.max(.35,Math.min(1,(window.innerWidth-32)/w,(window.innerHeight-top)/h));
+    if(Math.abs(s-this.state.scale)>.001)this.setState({scale:s});
+  }
+
+  simNow(){const c=this.state.clock;return c.live?Date.now():c.simAnchor+(Date.now()-c.realAnchor)*c.speed;}
+  tick(){
+    const now=this.simNow();
+    if(Math.floor(now/60000)!==Math.floor(this.state.now/60000))this.setState({now});
+    const key=this.routine(now).key;
+    if(this.lastKey===null){this.lastKey=key;return;}
+    if(key!==this.lastKey){
+      this.lastKey=key; clearTimeout(this.sndT);
+      if(key!=='bed'&&key.indexOf('gap')!==0)this.sndT=setTimeout(()=>{if(this.lastKey===key)this.play(this.state.settings.tone);},350);
+    }
+  }
+  routine(now){
+    const d=new Date(now), day=(d.getDay()+6)%7, mf=d.getHours()*60+d.getMinutes()+d.getSeconds()/60;
+    const list=this.state.data.blocks.filter(b=>b.day===day).sort((a,b)=>a.start-b.start);
+    const cur=list.find(b=>b.start<=mf&&mf<b.end);
+    if(cur){const nx=list.find(b=>b.start>=cur.end);return{key:cur.id,type:'block',title:cur.title,start:cur.start,end:cur.end,subs:cur.subs,next:nx?nx.title:'-',mf};}
+    const prev=list.slice().reverse().find(b=>b.end<=mf), nx=list.find(b=>b.start>mf);
+    if(prev&&nx)return{key:'gap'+prev.id,type:'gap',title:'Free time',start:prev.end,end:nx.start,subs:[],next:nx.title,mf};
+    return{key:'bed',type:'bed',next:nx?nx.title:'-',nextStart:nx?nx.start:null,mf};
+  }
+  setClock(ms,speed){this.setState({clock:{live:false,simAnchor:ms,realAnchor:Date.now(),speed},now:ms});}
+  dayStart(ms){const d=new Date(ms);d.setHours(0,0,0,0);return d.getTime();}
+  curSpeed(){const c=this.state.clock;return c.live?1:c.speed;}
+
+  ctx_(){
+    if(!this.ac){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;this.ac=new AC();}
+    if(this.ac.state==='suspended')this.ac.resume();
+    return this.ac;
+  }
+  stop(){
+    if(this.out&&this.ac){const g=this.out,t=this.ac.currentTime;g.gain.cancelScheduledValues(t);g.gain.setTargetAtTime(0,t,.08);setTimeout(()=>{try{g.disconnect();}catch(e){}},700);}
+    this.out=null; clearTimeout(this.playT);
+    if(this.state.playing)this.setState({playing:false});
+  }
+  play(tone){
+    const ac=this.ctx_(); if(!ac)return; this.stop();
+    const v=this.state.settings.volume/100, out=ac.createGain(); out.gain.value=v*v*.9; out.connect(ac.destination); this.out=out;
+    const t0=ac.currentTime+.05, D=10;
+    const note=(f,start,len,amp,type,attack)=>{const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,start);g.gain.exponentialRampToValueAtTime(amp,start+(attack||.02));g.gain.exponentialRampToValueAtTime(.0001,start+len);o.connect(g);g.connect(out);o.start(start);o.stop(start+len+.05);};
+    if(tone==='bowl'){
+      [[196,.3,9.9],[197.3,.2,9.9],[541,.1,7],[1058,.04,4.5]].forEach(([f,a,l])=>note(f,t0,l,a,'sine',.04));
+      [[196,.13,5.3],[197.3,.08,5.3],[541,.04,4]].forEach(([f,a,l])=>note(f,t0+4.6,l,a,'sine',.05));
+    }else if(tone==='chime'){
+      [[784,0],[988,.55],[1175,1.1],[1568,1.65],[1175,3.2],[988,3.75],[784,4.3],[659,6.1],[784,6.65],[988,7.2]].forEach(([f,t])=>{note(f,t0+t,Math.min(3.2,D-t-.05),.15,'sine',.01);note(f*2.01,t0+t,1.4,.025,'sine',.01);});
+    }else{
+      const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(450,t0);lp.frequency.linearRampToValueAtTime(1400,t0+4);lp.frequency.linearRampToValueAtTime(550,t0+D);lp.connect(out);
+      [110,164.81,220,277.18,329.63].forEach((f,i)=>[0,-7,7].forEach(det=>{const o=ac.createOscillator(),g=ac.createGain(),a=.045/(1+i*.35);o.type='triangle';o.frequency.value=f;o.detune.value=det;g.gain.setValueAtTime(.0001,t0);g.gain.linearRampToValueAtTime(a,t0+3);g.gain.setValueAtTime(a,t0+6.5);g.gain.linearRampToValueAtTime(.0001,t0+D);o.connect(g);g.connect(lp);o.start(t0);o.stop(t0+D+.1);}));
+    }
+    this.setState({playing:true});
+    this.playT=setTimeout(()=>{if(this.out===out){this.out=null;this.setState({playing:false});}setTimeout(()=>{try{out.disconnect();}catch(e){}},300);},D*1000+200);
+  }
+  setSettings(p){this.setState(s=>({settings:{...s.settings,...p}}));}
+  setVolume(v){this.setSettings({volume:v});if(this.out&&this.ac)this.out.gain.setTargetAtTime((v/100)*(v/100)*.9,this.ac.currentTime,.05);}
+
+  setData(fn){this.setState(s=>({data:fn(s.data)}));}
+  lk(){const l=this.state.list;return l==='self'||l==='room'?l:'todo';}
+  setList(key,fn){this.setData(d=>({...d,[key]:fn(d[key])}));}
+  toggleTodo(id){
+    this.setList('todo',src=>src.map(x=>x.id===id?{...x,done:!x.done}:x));
+  }
+  sinkTodo_unused(id){
+    this.setList('todo',src=>{
+      const arr=src.slice(), i=arr.findIndex(x=>x.id===id); if(i<0)return src;
+      const end=subEnd(arr,i), chunk=arr.slice(i,end); chunk[0]={...chunk[0],done:!chunk[0].done};
+      arr.splice(i,end-i); const d=chunk[0].depth;
+      let gs=i; while(gs>0&&arr[gs-1].depth>=d)gs--;
+      let ge=i; while(ge<arr.length&&arr[ge].depth>=d)ge++;
+      let ins=ge;
+      if(!chunk[0].done){for(let k=gs;k<ge;k++){if(arr[k].depth===d&&arr[k].done){ins=k;break;}}}
+      arr.splice(ins,0,...chunk); return arr;
+    });
+  }
+  indent(id,dir){
+    this.setList(this.lk(),src=>{
+      const arr=src.map(x=>({...x})), i=arr.findIndex(x=>x.id===id); if(i<0)return src;
+      const d=arr[i].depth, end=subEnd(arr,i);
+      if(dir>0){if(i===0)return src;const max=Math.min(arr[i-1].depth+1,1);if(d>=max)return src;}
+      else if(d===0)return src;
+      for(let k=i;k<end;k++)arr[k].depth=Math.max(0,Math.min(1,arr[k].depth+dir));
+      return arr;
+    });
+  }
+  swDown(id,e){if(e.button>0)return;this.sw={id,x:e.clientX,y:e.clientY,moved:false,dead:false};}
+  swMove(e){
+    const s=this.sw; if(!s||s.dead)return;
+    const dx=e.clientX-s.x, dy=e.clientY-s.y;
+    if(!s.moved){
+      if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){s.dead=true;return;}
+      if(Math.abs(dx)<=10)return;
+      s.moved=true; try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){}
+    }
+    this.setState({swipe:{id:s.id,dx:Math.max(-70,Math.min(70,dx/this.state.scale))}});
+  }
+  swUp(e,cancel){
+    const s=this.sw; this.sw=null; if(!s)return;
+    if(s.moved){const dx=this.state.swipe?this.state.swipe.dx:0;if(dx>40)this.indent(s.id,1);else if(dx<-40)this.indent(s.id,-1);this.setState({swipe:null});}
+    else if(!s.dead&&!cancel&&!this.state.editing)this.toggleTodo(s.id);
+  }
+  editText(key,id,text){this.setList(key,a=>a.map(x=>x.id===id?{...x,text}:x));}
+  addAfter(key,id){
+    const nid=uid();
+    this.setList(key,src=>{const arr=src.slice(),i=arr.findIndex(x=>x.id===id);if(i<0)return src;
+      arr.splice(subEnd(arr,i),0,{id:nid,text:'',depth:arr[i].depth||0,done:false});
+      return arr;});
+    this.setState({focusId:nid,selId:nid});
+  }
+  addEnd(key){
+    const nid=uid();
+    this.setList(key,src=>{const arr=src.slice();
+      arr.push({id:nid,text:'',depth:0,done:false});
+      return arr;});
+    this.setState({focusId:nid});
+  }
+  delItem(key,id){
+    this.setList(key,src=>{const arr=src.slice(),i=arr.findIndex(x=>x.id===id);if(i<0)return src;
+      const end=subEnd(arr,i);for(let k=i+1;k<end;k++)arr[k]={...arr[k],depth:arr[k].depth-1};arr.splice(i,1);return normalize(arr);});
+  }
+  onItemKey(key,id,e){
+    if(e.key==='Enter'){e.preventDefault();this.addAfter(key,id);}
+    else if(e.key==='Backspace'&&e.target.value===''){e.preventDefault();this.delItem(key,id);}
+  }
+  setCats(fn){this.setList('grocery',fn);}
+  gToggle(cid,iid){this.setCats(cs=>cs.map(c=>c.id!==cid?c:{...c,items:c.items.map(i=>i.id===iid?{...i,on:!i.on}:i)}));}
+  gEdit(cid,iid,text){this.setCats(cs=>cs.map(c=>c.id!==cid?c:{...c,items:c.items.map(i=>i.id===iid?{...i,text}:i)}));}
+  gDel(cid,iid){this.setCats(cs=>cs.map(c=>c.id!==cid?c:{...c,items:c.items.filter(i=>i.id!==iid)}));}
+  gAdd(cid,afterId){
+    const nid=uid();
+    this.setCats(cs=>cs.map(c=>{if(c.id!==cid)return c;const items=c.items.slice();const k=afterId?items.findIndex(i=>i.id===afterId)+1:items.length;items.splice(k,0,{id:nid,text:'',on:false});return{...c,items};}));
+    this.setState({focusId:nid});
+  }
+  gKey(cid,iid,e){
+    if(e.key==='Enter'){e.preventDefault();this.gAdd(cid,iid);}
+    else if(e.key==='Backspace'&&e.target.value===''){e.preventDefault();this.gDel(cid,iid);}
+  }
+  addCat(){const nid=uid();this.setCats(cs=>[...cs,{id:nid,name:'',items:[]}]);this.setState({focusId:nid});}
+  purge(){
+    this.setData(d=>{
+      const todo=[];
+      d.todo.forEach((t,i)=>{if(t.text.trim())todo.push(t);});
+      return {...d, todo:normalize(todo), self:normalize(d.self.filter(x=>x.text.trim()).map(x=>({...x,depth:x.depth||0}))), room:normalize(d.room.filter(x=>x.text.trim()).map(x=>({...x,depth:x.depth||0}))),
+        grocery:d.grocery.map(c=>({...c,name:c.name.trim(),items:c.items.filter(i=>i.text.trim())})).filter(c=>c.name||c.items.length).map(c=>c.name?c:{...c,name:'Untitled'})};
+    });
+  }
+  toggleEdit(){if(this.state.editing){this.purge();this.setState({editing:false,focusId:null});}else this.setState({editing:true,focusId:null});}
+  dDown(id,e){
+    if(e.button>0||this.dd||this.hd)return; e.preventDefault();
+    const el=e.currentTarget; try{el.setPointerCapture(e.pointerId);}catch(_){}
+    if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+    const todo=this.state.data[this.lk()], i=todo.findIndex(x=>x.id===id); if(i<0)return;
+    const base=todo[i].depth, maxD=i>0?Math.min(todo[i-1].depth+1,1):0;
+    this.hd={id,el,x0:e.clientX,y0:e.clientY,mode:'pending',base,maxD,k:this.state.scale};
+    this.hdT=setTimeout(()=>{const g=this.hd;if(g&&g.mode==='pending'){g.mode='reorder';this.startReorder(id,g.el,g.y0,g.x0);if(navigator.vibrate)navigator.vibrate(12);}},280);
+  }
+  startReorder(id,handle,clientY,clientX){
+    const todo=this.state.data[this.lk()], dI=todo.findIndex(x=>x.id===id); if(dI<0)return;
+    const k=this.state.scale, pane=this.paneRef.current, pr=pane.getBoundingClientRect();
+    const row=handle.parentElement, els=[...row.parentElement.querySelectorAll('[data-todo-row]')];
+    const rows=els.map(el=>{const r=el.getBoundingClientRect();return{top:(r.top-pr.top)/k,h:r.height/k};});
+    const rr=row.getBoundingClientRect(), dE=subEnd(todo,dI);
+    let H=0; for(let i=dI;i<dE;i++)H+=rows[i].h;
+    this.dd={id,dI,dE,rows,H,pr,k,x0:clientX,base:todo[dI].depth,offY:(clientY-rr.top)/k,left0:(rr.left-pr.left)/k,w:rr.width/k};
+    this.setState({dragId:id,drop:false,dz:{ins:dI,nd:todo[dI].depth},ghost:{top:rows[dI].top,left:this.dd.left0}});
+  }
+  dMove(e){
+    const g=this.hd; if(!g)return;
+    if(g.mode==='pending'){
+      const dx=e.clientX-g.x0, dy=e.clientY-g.y0;
+      if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){g.mode='indent';clearTimeout(this.hdT);}
+      else if(Math.abs(dy)>8){g.mode='none';clearTimeout(this.hdT);return;}
+      else return;
+    }
+    if(g.mode==='indent'){
+      const dx=(e.clientX-g.x0)/g.k, lo=-g.base*24, hi=(g.maxD-g.base)*24;
+      const c=dx<lo?lo+(dx-lo)*.25:dx>hi?hi+(dx-hi)*.25:dx;
+      this.setState({ind:{id:g.id,dx:c,anim:false}});
+    }else if(g.mode==='reorder'&&this.dd&&!this.state.drop){
+      const c=this.dCalc(e.clientX,e.clientY);
+      this.setState({dz:{ins:c.ins,nd:c.nd},ghost:{top:c.top,left:this.dd.left0}});
+    }
+  }
+  dCalc(clientX,clientY){
+    const g=this.dd, todo=this.state.data[this.lk()], top=(clientY-g.pr.top)/g.k-g.offY, mid=top+g.rows[g.dI].h/2;
+    let ins=0;
+    for(let i=0;i<todo.length;i++){
+      if(i>=g.dI&&i<g.dE)continue;
+      const m=g.rows[i].top+g.rows[i].h/2;
+      if(i<g.dI){if(mid>=m)ins++;}else if(mid>m)ins++;
+    }
+    const rem=todo.filter((x,i)=>i<g.dI||i>=g.dE), prev=ins>0?rem[ins-1].depth:-1;
+    const nd=Math.max(0,Math.min(g.base,prev+1,1));
+    return {top,ins,nd};
+  }
+  dGapTop(ins){
+    const g=this.dd, n=this.state.data[this.lk()].length;
+    if(ins==null||ins===g.dI)return g.rows[g.dI].top;
+    if(ins<g.dI)return g.rows[ins].top;
+    let t=g.rows[g.dI].top; for(let i=g.dE;i<g.dE+(ins-g.dI)&&i<n;i++)t+=g.rows[i].h; return t;
+  }
+  dUp(){
+    const hg=this.hd; clearTimeout(this.hdT); this.hd=null;
+    if(hg&&hg.mode==='indent'){
+      const cur=this.state.ind?this.state.ind.dx:0, nd=Math.max(0,Math.min(hg.maxD,hg.base+Math.round(cur/24)));
+      this.setState({ind:{id:hg.id,dx:(nd-hg.base)*24,anim:true}});
+      setTimeout(()=>{
+        const K=this.lk();this.setState(s=>{const arr=s.data[K].slice(),i=arr.findIndex(x=>x.id===hg.id);if(i>=0&&nd!==arr[i].depth){arr[i]={...arr[i],depth:nd};}
+          return{data:{...s.data,[K]:normalize(arr)},ind:null};});
+      },140);
+      return;
+    }
+    const g=this.dd; if(!g||this.state.drop)return;
+    const dz=this.state.dz||{ins:g.dI,nd:g.base}, ins=dz.ins==null?g.dI:dz.ins;
+    this.setState({drop:true,ghost:{top:this.dGapTop(ins),left:g.left0+(dz.nd-g.base)*24}});
+    setTimeout(()=>{
+      const K=this.lk(), src=this.state.data[K], chunk=src.slice(g.dI,g.dE), rem=src.filter((x,i)=>i<g.dI||i>=g.dE), delta=dz.nd-chunk[0].depth;
+      rem.splice(ins,0,...chunk.map(x=>delta?{...x,depth:Math.max(0,Math.min(1,x.depth+delta))}:x));
+      this.dd=null;
+      this.setState(s=>({data:{...s.data,[K]:normalize(rem)},dragId:null,drop:false,dz:null,ghost:null}));
+    },170);
+  }
+  closeList(){if(this.state.editing)this.purge();this.setState({list:null,editing:false,focusId:null});}
+
+  colDown(day,e){
+    if(e.button>0)return;
+    const el=e.currentTarget, r=el.getBoundingClientRect();
+    const toMin=y=>Math.max(0,Math.min(1440,Math.round(((y-r.top)/r.height*1440)/15)*15));
+    const a0=Math.max(0,Math.min(1425,Math.floor(((e.clientY-r.top)/r.height*1440)/15)*15));
+    const bl=this.state.data.blocks.filter(b=>b.day===day);
+    if(bl.some(b=>a0>=b.start&&a0<b.end))return;
+    const lo=Math.max(0,...bl.filter(b=>b.end<=a0).map(b=>b.end));
+    const hi=Math.min(1440,...bl.filter(b=>b.start>a0).map(b=>b.start));
+    const pid=e.pointerId;
+    const begin=()=>{this.dg={day,a:a0,lo,hi,toMin};try{el.setPointerCapture(pid);}catch(_){}this.setState({drag:{day,s:a0,e:Math.min(hi,a0+15)}});if(navigator.vibrate)navigator.vibrate(10);};
+    if(e.pointerType==='touch'){this.lp={x:e.clientX,y:e.clientY};this.lpT=setTimeout(()=>{this.lp=null;begin();},300);}
+    else{e.preventDefault();begin();}
+  }
+  colMove(e){
+    if(this.lp){if(Math.hypot(e.clientX-this.lp.x,e.clientY-this.lp.y)>8){clearTimeout(this.lpT);this.lp=null;}return;}
+    const g=this.dg; if(!g)return;
+    const m=g.toMin(e.clientY); let s,en;
+    if(m>g.a){s=g.a;en=Math.min(g.hi,Math.max(m,g.a+15));}else{en=Math.min(g.hi,g.a+15);s=Math.max(g.lo,m);}
+    if(!this.state.drag||this.state.drag.s!==s||this.state.drag.e!==en)this.setState({drag:{day:g.day,s,e:en}});
+  }
+  colUp(cancel){
+    clearTimeout(this.lpT); this.lp=null;
+    const g=this.dg; this.dg=null; if(!g)return;
+    const dr=this.state.drag; this.setState({drag:null});
+    if(cancel||!dr)return;
+    let s=dr.s, en=dr.e; if(en-s<=15)en=Math.min(g.hi,s+60);
+    this.openSheet({day:g.day,start:s,end:en});
+  }
+  openSheet(o){
+    const all=this.state.data.blocks, b=o.id?all.find(x=>x.id===o.id):null, gid=b?(b.gid||b.id):null;
+    const days=b?all.filter(x=>(x.gid||x.id)===gid).map(x=>x.day).sort():[o.day];
+    this.setState({focusId:null,sheet:{gid,days,start:b?b.start:o.start,end:b?b.end:o.end,title:b?b.title:'',subs:(b?b.subs:[]).map(text=>({id:uid(),text})),error:''}});
+  }
+  wIdx(S,k){const v=(k[0]==='s'?S.start:S.end)%1440,h24=Math.floor(v/60);return k[1]==='H'?h24%12:k[1]==='M'?Math.min(3,Math.round((v%60)/15)):(h24>=12?1:0);}
+  wSet(k,idx){
+    const S=this.state.sheet; if(!S)return;
+    let hi=this.wIdx(S,k[0]+'H'),mn=this.wIdx(S,k[0]+'M'),ap=this.wIdx(S,k[0]+'A');
+    if(k[1]==='H')hi=idx;else if(k[1]==='M')mn=idx;else ap=idx;
+    const nv=(hi+12*ap)*60+mn*15;
+    if(k[0]==='s'){const p={start:nv};if(S.end<=nv)p.end=Math.min(1440,nv+60);this.sh(p);}
+    else this.sh({end:nv===0?1440:nv});
+  }
+  wScroll(k,e){
+    const S=this.state.sheet; if(!S)return; this.wBusy[k]=Date.now();
+    const n=k[1]==='H'?12:k[1]==='M'?4:2, idx=Math.max(0,Math.min(n-1,Math.round(e.currentTarget.scrollTop/24)));
+    if(idx!==this.wIdx(S,k))this.wSet(k,idx);
+  }
+  syncWheels(){
+    const S=this.state.sheet; this.wLast=this.wLast||{}; this.wEl=this.wEl||{};
+    Object.keys(this.wRefs).forEach(k=>{const el=this.wRefs[k].current;if(!el)return;const idx=this.wIdx(S,k);
+      if(this.wEl[k]!==el||this.wLast[k]!==idx){const fromUser=this.wEl[k]===el&&Math.round(el.scrollTop/24)===idx;this.wEl[k]=el;this.wLast[k]=idx;if(!fromUser)el.scrollTop=idx*24;}});
+  }
+  sh(p){this.setState(s=>({sheet:{...s.sheet,...p,error:''}}));}
+  shSub(id,text){this.setState(s=>({sheet:{...s.sheet,subs:s.sheet.subs.map(x=>x.id===id?{...x,text}:x)}}));}
+  shAddSub(afterId){if(this.state.sheet&&this.state.sheet.subs.length>=5)return;const nid=uid();this.setState(s=>{const subs=s.sheet.subs.slice();const k=afterId?subs.findIndex(x=>x.id===afterId)+1:subs.length;subs.splice(k,0,{id:nid,text:''});return{focusId:nid,sheet:{...s.sheet,subs}};});}
+  shDelSub(id){this.setState(s=>({sheet:{...s.sheet,subs:s.sheet.subs.filter(x=>x.id!==id)}}));}
+  saveSheet(){
+    const S=this.state.sheet, title=S.title.trim(), err=m=>this.setState({sheet:{...S,error:m}});
+    if(!title)return err('Give the block a title.');
+    if(S.end<=S.start)return err('End time must be after the start time.');
+    if(!S.days.length)return err('Pick at least one day.');
+    const inG=b=>S.gid&&(b.gid||b.id)===S.gid, all=this.state.data.blocks;
+    const clashes=all.filter(b=>!inG(b)&&S.days.includes(b.day)&&b.start<S.end&&S.start<b.end);
+    if(clashes.length){const c=clashes[0];const ds=[...new Set(clashes.map(x=>x.day))].sort().map(x=>DAYS[x]).join(', ');return err('Overlaps “'+c.title+'” ('+lbl(c.start)+' – '+lbl(c.end)+') on '+ds+'.');}
+    const gid=S.gid||uid(), subs=S.subs.map(x=>x.text.trim()).filter(Boolean), old={};
+    all.filter(inG).forEach(b=>{old[b.day]=b.id;});
+    const nb=S.days.map(day=>({id:old[day]||uid(),gid,day,start:S.start,end:S.end,title,subs:subs.slice()}));
+    this.setData(d=>({...d,blocks:[...d.blocks.filter(b=>!inG(b)),...nb]}));
+    this.setState({sheet:null});
+  }
+  deleteSheet(){const g=this.state.sheet.gid;this.setData(d=>({...d,blocks:d.blocks.filter(b=>(b.gid||b.id)!==g)}));this.setState({sheet:null});}
+  setDays(days){this.sh({days:[...new Set(days)].sort()});}
+
+  renderVals(){
+    const st=this.state, HP=this.hp(), L=st.orient==='landscape', data=st.data, ed=st.editing, DK=st.settings.theme==='dark', ACC=DK?ACC_D:ACC_L, ON=DK?INK:'#ffffff';
+    const now=st.now, d=new Date(now), hh=d.getHours(), mm=d.getMinutes(), ct=t12(hh*60+mm);
+    const todayIdx=(d.getDay()+6)%7, nowMin=hh*60+mm+d.getSeconds()/60;
+    const R=this.routine(now), hasBar=R.type!=='bed';
+    const s12=hasBar?t12(R.start):{t:'',ap:''}, e12=hasBar?t12(R.end%1440):{t:'',ap:''};
+    const openTodo=data.todo.filter(t=>!t.done).length, gCount=data.grocery.reduce((n,c)=>n+c.items.filter(i=>i.on).length,0);
+    const badge={todo:' ('+openTodo+')',grocery:' ('+gCount+')',self:'',room:''};
+    const cur=LISTS.find(l=>l.key===st.list);
+    const isTodo=st.list==='todo', isG=st.list==='grocery', isPlain=st.list==='self'||st.list==='room';
+    const sw=st.swipe, live=st.clock.live, sp=st.clock.speed;
+    const LK=isPlain?st.list:'todo', OL=data[LK].map(x=>x.depth==null?{...x,depth:0}:x);
+    const dI=OL.findIndex(x=>x.id===st.dragId), dE=dI>=0?subEnd(OL,dI):-1;
+    const dIt=dI>=0?OL[dI]:null, gh=st.ghost, dg=this.dd;
+    const inDrag=id=>{const k=OL.findIndex(x=>x.id===id);return dI>=0&&k>=dI&&k<dE;};
+    const dz=st.dz, rowShift=id=>{
+      if(!dg||!dz||dz.ins==null)return 0; const k=OL.findIndex(x=>x.id===id);
+      if(k<dg.dI){return k>=dz.ins?dg.H:0;}
+      if(k>=dg.dE){const r=k-dg.dE+dg.dI;return r<dz.ins?-dg.H:0;}
+      return 0;};
+    const nums=[];{let a=0,b=0;OL.forEach(t=>{if(t.depth===0){a++;b=0;nums.push(a+')');}else{b++;nums.push((a||1)+'.'+b+')');}});}
+    const todos=OL.map((t,ti)=>{const dx=sw&&sw.id===t.id?sw.dx:0;return{
+      text:t.text, pad:(t.depth*24)+'px', deco:t.done?'line-through':'none', color:t.done?'#8c8c8c':INK,
+      tx:'translateX('+(dx*.7)+'px)', trans:dx?'none':'transform .18s ease', cueOp:String(Math.min(1,Math.abs(dx)/40)),
+      cueIcon:dx<0?'format_indent_decrease':'format_indent_increase', cueLeft:(t.depth*24-26)+'px', autoFocus:st.focusId===t.id,
+      onTap:()=>{if(LK==='todo')this.toggleTodo(t.id);}, tapCursor:LK==='todo'?'pointer':'default', dDown:e=>this.dDown(t.id,e), num:nums[ti], numW:t.depth?'38px':'24px', padView:(t.depth*24+2)+'px',
+      padDrag:(t.depth*24+2)+'px', dragBg:'transparent', dragOp:inDrag(t.id)?'0':'1', shift:'translate('+(st.ind&&st.ind.id===t.id?st.ind.dx:0)+'px,'+rowShift(t.id)+'px)', shiftTrans:st.ind&&st.ind.id===t.id?(st.ind.anim?'transform .14s ease':'none'):dg?'transform .2s cubic-bezier(.2,.7,.3,1)':'none', dragShadow:'none',
+      down:e=>this.swDown(t.id,e), move:e=>this.swMove(e), up:e=>this.swUp(e,false), cancel:e=>this.swUp(e,true),
+      onEdit:e=>this.editText(LK,t.id,e.target.value), onKey:e=>this.onItemKey(LK,t.id,e), onDel:()=>this.delItem(LK,t.id)};});
+    const cats=data.grocery.map(c=>{const cnt=c.items.filter(i=>i.on).length;return{name:c.name, autoFocus:st.focusId===c.id,
+      expanded:!c.collapsed, chev:c.collapsed?'rotate(-90deg)':'none', count:String(cnt), badgeBg:cnt?ACC:'#e8e8e8', badgeInk:cnt?ON:'#5f5f5f', badgeF:cnt&&DK?KEEP:'none',
+      onCollapse:()=>this.setCats(cs=>cs.map(x=>x.id===c.id?{...x,collapsed:!x.collapsed}:x)),
+      onName:e=>this.setCats(cs=>cs.map(x=>x.id===c.id?{...x,name:e.target.value}:x)),
+      onDel:()=>this.setCats(cs=>cs.filter(x=>x.id!==c.id)), onAdd:()=>this.gAdd(c.id),
+      items:c.items.map(i=>({text:i.text, dot:i.on?INK:'transparent', weight:i.on?'700':'400', autoFocus:st.focusId===i.id,
+        toggle:()=>this.gToggle(c.id,i.id), onEdit:e=>this.gEdit(c.id,i.id,e.target.value), onKey:e=>this.gKey(c.id,i.id,e), onDel:()=>this.gDel(c.id,i.id)}))};});
+    const pk=isPlain?st.list:'self';
+    const plain=data[pk].map(p=>({text:p.text, autoFocus:st.focusId===p.id, onEdit:e=>this.editText(pk,p.id,e.target.value), onKey:e=>this.onItemKey(pk,p.id,e), onDel:()=>this.delItem(pk,p.id)}));
+    const listLen=isTodo?data.todo.length:isG?data.grocery.reduce((n,c)=>n+c.items.length,0):isPlain?data[pk].length:1;
+
+    const weekCols=DAYS.map((label,i)=>{
+      const bl=data.blocks.filter(b=>b.day===i).sort((a,b)=>a.start-b.start), g=st.drag&&st.drag.day===i?st.drag:null, today=i===todayIdx;
+      return {label, isToday:today, labelBg:today?ACC:'transparent', labelColor:today?ON:INK, labelF:today&&DK?KEEP:'none', bg:today?'#fafafa':'transparent',
+        down:e=>this.colDown(i,e),
+        blocks:bl.map(b=>({title:b.title, range:(m=>{m=m%1440;const H=Math.floor(m/60),M=m%60;return ((H%12)||12)+':'+String(M).padStart(2,'0')+(H<12?'am':'pm');})(b.start)+'-'+(m=>{m=m%1440;const H=Math.floor(m/60),M=m%60;return ((H%12)||12)+':'+String(M).padStart(2,'0')+(H<12?'am':'pm');})(b.end), top:(b.start/60*HP)+'px', height:Math.max(8,(b.end-b.start)/60*HP-2)+'px',
+          bg:b.id===R.key?ACC:INK, color:b.id===R.key?ON:'#ffffff', f:b.id===R.key&&DK?KEEP:'none', open:()=>this.openSheet({id:b.id})})),
+        hasGhost:!!g, ghostTop:g?(g.s/60*HP)+'px':'0px', ghostH:g?((g.e-g.s)/60*HP)+'px':'0px', ghostLabel:g?lbl(g.s)+' – '+lbl(g.e):''};
+    });
+    const hours=[];for(let h=0;h<=24;h++)hours.push({label:lbl((h%24)*60).replace(':00',''),top:(h*HP)+'px'});
+
+    const S=st.sheet, dev=L?{w:900,h:416,sw:880,sh:396}:{w:416,h:900,sw:396,sh:880}, sc=st.scale;
+    return {
+      showTestBar:this.props.showTestControls??true,
+      setLandscape:()=>this.setState({orient:'landscape'}), setPortrait:()=>this.setState({orient:'portrait'}),
+      landBg:L?'#ffffff':'transparent', portBg:L?'transparent':'#ffffff',
+      goLive:()=>this.setState({clock:{live:true,simAnchor:0,realAnchor:0,speed:1},now:Date.now()}),
+      liveBg:live?INK:'#f1f1f3', liveColor:live?'#ffffff':INK,
+      simDays:DAYS.map((label,i)=>({label, bg:i===todayIdx?INK:'#f1f1f3', color:i===todayIdx?'#ffffff':INK, pick:()=>{
+        const n=this.simNow(), base=new Date(this.dayStart(n)); base.setDate(base.getDate()+(i-todayIdx)); this.setClock(base.getTime()+(n-this.dayStart(n)),this.curSpeed());}})),
+      simMin:String(hh*60+mm), simLabel:ct.t+' '+ct.ap,
+      onSlider:e=>{const n=this.simNow();this.setClock(this.dayStart(n)+(+e.target.value)*60000+(d.getSeconds()*1000),this.curSpeed());},
+      speeds:[['Pause',0],['1×',1],['60×',60],['600×',600]].map(([label,v])=>{const on=!live&&sp===v;return{label,bg:on?INK:'transparent',color:on?'#ffffff':INK,pick:()=>this.setClock(this.simNow(),v)};}),
+      resetAll:()=>{this.stop();this.lastKey=null;try{localStorage.removeItem(KEY);}catch(e){}this.setState({data:sample(),settings:{...DEF_SET},view:'home',list:null,editing:false,sheet:null,focusId:null});},
+      wrapW:(dev.w*sc)+'px', wrapH:(dev.h*sc)+'px', scaleTf:'scale('+sc+')', screenW:dev.sw+'px', screenH:dev.sh+'px',
+      keepF:DK?KEEP:'none', acc:ACC, screenFilter:st.settings.theme==='dark'?'url(#darkTone)':'brightness(.9)', sheetShadow:st.settings.theme==='dark'?'none':'0 12px 40px rgba(0,0,0,.18)', scrim:st.settings.theme==='dark'?'rgba(255,255,255,.62)':'rgba(0,0,0,.32)',
+      isLandscape:L,
+      clockTime:ct.t, clockAp:ct.ap, dayName:DAYS[todayIdx], dateStr:d.getDate()+' '+MONTHS[d.getMonth()],
+      blockTitle:R.type==='bed'?'':R.title, hasBar, isBed:!hasBar,
+      progressPct:hasBar?(Math.max(0,Math.min(1,(R.mf-R.start)/(R.end-R.start)))*100).toFixed(2)+'%':'0%',
+      startT:s12.t, startAp:s12.ap, endT:e12.t, endAp:e12.ap,
+      subs:[0,1,2,3,4].map(i=>{const t=(R.subs||[])[i]||'';return{text:t,has:!!t};}), leftStr:hasBar?dur(Math.ceil(R.end-R.mf)):'', nextTitle:R.next,
+      nextAt:R.type==='bed'&&R.nextStart!=null?'at '+lbl(R.nextStart):'',
+      showMenu:!st.list, showDetail:!!st.list,
+      lists:LISTS.map(l=>{const n=l.key==='todo'?openTodo:l.key==='grocery'?gCount:null;return{icon:l.icon,label:l.label,hasBadge:n!=null,count:n!=null?String(n):'',badgeBg:n?ACC:'#e8e8e8',badgeInk:n?ON:'#5f5f5f',badgeF:n&&DK?KEEP:'none',open:()=>this.setState({list:l.key,editing:false,focusId:null})}}),
+      openSettings:()=>this.setState({view:'settings'}),
+      closeList:()=>this.closeList(), toggleEdit:()=>this.toggleEdit(),
+      curIcon:cur?cur.icon:'', curLabel:cur?cur.label:'',
+      editing:ed, notEditing:!ed, paneRef:this.paneRef,
+      hasDragGhost:!!(dIt&&gh&&dg), ghostTop:gh?gh.top+'px':'0px', ghostLeft:gh?gh.left+'px':'0px', ghostW:dg?dg.w+'px':'0px', ghostShadow:st.drop?'0 0 0 rgba(0,0,0,0)':'0 12px 30px rgba(0,0,0,.18)', ghostScale:st.drop?'scale(1)':'scale(1.03)',
+      ghostTrans:st.drop?'top .17s ease, left .17s ease, transform .17s ease, box-shadow .17s ease':'left .12s ease, transform .12s ease',
+      ghostNum:dI>=0?nums[dI]:'', ghostText:dIt?(dIt.text||'New task'):'', ghostDeco:dIt&&dIt.done?'line-through':'none', ghostMore:dI>=0&&dE-dI>1?'+'+(dE-dI-1)+(isPlain?' sub-item':' sub-task')+(dE-dI-1>1?'s':''):'', dMove:e=>this.dMove(e), dUp:()=>this.dUp(),
+      viewTodo:(isTodo||isPlain)&&!ed, editTodo:(isTodo||isPlain)&&ed, addLabel:isPlain?'Add item':'Add task', newPh:isPlain?'New item':'New task', viewGrocery:isG&&!ed, editGrocery:isG&&ed, viewPlain:false, editPlain:false,
+      todos, cats, plain, isEmpty:!ed&&listLen===0,
+      addTodo:()=>this.addEnd(LK), addPlain:()=>this.addEnd(pk), addCat:()=>this.addCat(),
+      showSettings:st.view==='settings', showRoutine:st.view==='routine',
+      closeSettings:()=>{this.setState({view:'home'});}, openRoutine:()=>this.setState({view:'routine'}), closeRoutine:()=>this.setState({view:'settings',sheet:null}),
+      setLight:()=>this.setSettings({theme:'light'}), setDark:()=>this.setSettings({theme:'dark'}),
+      lightBg:st.settings.theme==='light'?INK:'transparent', lightColor:st.settings.theme==='light'?'#ffffff':INK,
+      darkBg:st.settings.theme==='dark'?INK:'transparent', darkColor:st.settings.theme==='dark'?'#ffffff':INK,
+      blockSummary:data.blocks.length+' blocks · repeats every week',
+      tones:TONES.map(t=>({name:t.name,desc:t.desc,dot:st.settings.tone===t.id?INK:'transparent',weight:st.settings.tone===t.id?'700':'500',pick:()=>{this.setSettings({tone:t.id});this.play(t.id);}})),
+      volume:String(st.settings.volume), volumeLabel:st.settings.volume+'%', onVolume:e=>this.setVolume(+e.target.value),
+      previewSel:()=>{if(st.playing)this.stop();else this.play(st.settings.tone);},
+      previewIcon:st.playing?'stop':'play_arrow', previewLabel:st.playing?'Stop':'Preview sound',
+      gridRef:this.gridRef, dayRef:this.dayRef, startRef:this.startRef, endRef:this.endRef, gridH:(24*HP)+'px', gridBgSize:'100% '+HP+'px', hours, weekCols, nowTop:(nowMin/60*HP)+'px',
+      colMove:e=>this.colMove(e), colUp:()=>this.colUp(false), colCancel:()=>this.colUp(true), stopProp:e=>e.stopPropagation(),
+      sheetOpen:!!S, sheetHeading:S&&S.gid?'Edit block':'New block', sheetIsEdit:!!(S&&S.gid),
+      sheetTitle:S?S.title:'', sheetStart:S?String(S.start):'0', sheetEnd:S?String(S.end):'15',
+      onSheetTitle:e=>this.sh({title:e.target.value}),
+      sheetDays:DAYS_LONG.map((full,i)=>{const on=!!S&&S.days.includes(i);return{full,letter:full[0],bg:on?INK:'transparent',color:on?'#ffffff':INK,toggle:()=>this.setDays(on?S.days.filter(x=>x!==i):[...S.days,i])};}),
+      pickWeekdays:()=>this.setDays([0,1,2,3,4]), pickWeekend:()=>this.setDays([5,6]), pickAll:()=>this.setDays([0,1,2,3,4,5,6]),
+      onSheetStart:e=>{const v=+e.target.value;this.sh(S&&S.end<=v?{start:v,end:Math.min(1440,v+60)}:{start:v});},
+      onSheetEnd:e=>this.sh({end:+e.target.value}),
+      wheelGroups:S?[['s','Start'],['e','End']].map(([g,label])=>({label,drums:[['H',['12','1','2','3','4','5','6','7','8','9','10','11'],'hour'],['M',['00','15','30','45'],'minute'],['A',['am','pm'],'am or pm']].map(([c,arr,nm])=>{const k=g+c,sel=this.wIdx(S,k);
+        return{ref:this.wRefs[k],sep:c==='M',aria:label+' '+nm,onScroll:e=>this.wScroll(k,e),items:arr.map((label,i)=>({label,color:i===sel?INK:'#a8a8a8',weight:i===sel?'700':'500',pick:()=>this.wSet(k,i)}))};})})):[],
+      sheetSubs:S?S.subs.map(x=>({text:x.text,autoFocus:st.focusId===x.id,onEdit:e=>this.shSub(x.id,e.target.value),
+        onKey:e=>{if(e.key==='Enter'){e.preventDefault();this.shAddSub(x.id);}else if(e.key==='Backspace'&&e.target.value===''){e.preventDefault();this.shDelSub(x.id);}},
+        onDel:()=>this.shDelSub(x.id)})):[],
+      addSub:()=>this.shAddSub(null), canAddSub:!!S&&S.subs.length<5, hasSheetError:!!(S&&S.error), sheetError:S?S.error:'',
+      closeSheet:()=>this.setState({sheet:null}), saveSheet:()=>this.saveSheet(), deleteSheet:()=>this.deleteSheet()
+    };
+  }
+}
+</script>
+</body>
+</html>
