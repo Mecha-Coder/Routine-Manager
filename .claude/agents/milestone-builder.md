@@ -22,7 +22,7 @@ You are the builder for one milestone of Routine Manager. The supervisor (the ma
 
 - Build only your milestone's scope, following CLAUDE.md's conventions and efficiency rules.
 - Verify as you go: `./gradlew assembleDebug lintDebug testDebugUnitTest`, install, and every "Install on the phone and verify" item you can check yourself (screenshots with `adb exec-out screencap -p` into `temp/screenshot/`, then open them with Read to look at the layout; logcat; dumpsys; `adb shell input` to tap).
-- Do not run the 1-hour memory check. The supervisor runs it.
+- Do not run the memory check. The supervisor runs it.
 - If you use the battery simulation commands, always finish with `adb shell dumpsys battery reset`.
 - Add notes under your milestone in `docs/BUILD_PLAN.md` (findings, tuned values, deviations). Do not mark the milestone Done; the supervisor does that after the gate.
 

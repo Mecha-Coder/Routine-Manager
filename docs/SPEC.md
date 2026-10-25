@@ -50,7 +50,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D18 | Notch | On the side where the notch is, padding = max(design padding, 34 dp). | Adds |
 | D19 | Clock and language | Always 12-hour (README format), whatever the phone's 24-hour setting. English only. | Confirms |
 | D20 | Project "done" | A 24-hour run on the phone (§5). | Adds |
-| D21 | Build order | Dashboard first, then lists, then settings and sound, then the timetable editor, then icon, release and user guide. See [BUILD_PLAN.md](BUILD_PLAN.md). | Plan |
+| D21 | Build order | M1, M2, then M3 (dashboard) with M11 (icon) beside it. After M3, two tracks run in parallel, each in its own git worktree: lists (M5 → M6 → M7) and power, settings and timetable (M4, M8 → M9 → M10). Builders take turns on the phone; the supervisor merges each milestone onto `main` after its gate and the owner's OK. Then M12 (release) and M13 (user guide). See [BUILD_PLAN.md](BUILD_PLAN.md). (Parallel tracks: owner, M2.) | Plan |
 | D22 | User guide | A root `README.md` walks through every feature with phone screenshots and links to the prototype on GitHub Pages so people can try it in a browser (M13). It lives on GitHub only; the app gets no help screen. | Adds |
 | D23 | Kotlin version | Kotlin **2.4.21**, up from the wizard's 2.2.10, so the serialization plugin and `kotlinx-serialization-json` can be current. The Compose compiler and serialization plugins use the same version. (Owner, M1.) | Adds |
 
@@ -98,7 +98,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 ### 3.5 Persistence (D5, D14)
 
 - One document holds everything the README lists under Persistence: the four lists, grocery collapsed state, blocks and settings. Shape = README › Data model, plus a `schemaVersion` field. The group id field is named `groupId` (the prototype's code calls it `gid`).
-- A change shows on screen at once and reaches disk within 0.5 s. Pending changes are also written when the app goes to the background.
+- A change shows on screen at once and reaches disk 0.5 s after the last change: a burst of changes (typing) is written once, after a 0.5 s pause. Pending changes are also written when the app goes to the background. (Owner, M2.)
 - Not saved: open list, edit mode, fake clock. Orientation is not saved (it follows the sensor).
 - If the saved file cannot be read, a copy of it is kept next to it (`app_data.corrupt-<time>.json`) and the app starts from sample data.
 - **No backup (D14).** Uninstalling the release app deletes all data. Losing the release signing key means an update needs an uninstall, which also deletes all data. M12 covers storing the key safely.

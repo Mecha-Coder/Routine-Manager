@@ -46,9 +46,9 @@ Talk to the owner in short messages: which milestone, what you need from them, e
 2. **Build.** `./gradlew assembleDebug lintDebug testDebugUnitTest`. Record the test count and the lint result.
 3. **Install and smoke test.** `adb logcat -c`, `./gradlew installDebug`, launch, use the app briefly, then run the crash and ANR checks from CLAUDE.md.
 4. **Idle redraw** (from M3 on): the gfxinfo check in CLAUDE.md, about 1 frame per minute.
-5. **1-hour memory run.** Start the CLAUDE.md meminfo loop with Bash `run_in_background`, writing to `temp/orchestration/mem-M<n>.log`. While it runs, do not install anything (that restarts the app and spoils the run). Meanwhile, ask the owner for the milestone's phone checks and **(owner)** checks, with exact steps.
+5. **30-minute memory run, at M2, M4, M7, M8 and M12 only.** Start the CLAUDE.md meminfo loop with Bash `run_in_background`, writing to `temp/orchestration/mem-M<n>.log`. While it runs, do not install anything (that restarts the app and spoils the run). Meanwhile, ask the owner for the milestone's phone checks and **(owner)** checks, with exact steps.
 6. **Judge.** Every acceptance criterion and gate item: pass or fail with evidence.
-7. **On a failure:** send the builder the failures and evidence. After its fix, rerun the gate from step 1, including a new full hour. After 2 failed fix rounds, stop and ask the owner.
+7. **On a failure:** send the builder the failures and evidence. After its fix, rerun the gate from step 1, including a new memory run where the milestone has one. After 2 failed fix rounds, stop and ask the owner.
 
 ## 4. Close the milestone
 

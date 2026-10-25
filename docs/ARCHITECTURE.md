@@ -34,7 +34,7 @@ com.jsk.routinemanager
 ├── data/
 │   ├── Model.kt               AppData, Settings, OutlineItem, GroceryCategory, GroceryItem, Block (@Serializable)
 │   ├── AppDataSerializer.kt   DataStore Serializer (JSON)
-│   ├── DataRepository.kt      StateFlow<AppData>, update { }, debounced save, flush()
+│   ├── DataRepository.kt      StateFlow<AppData?>, update { }, debounced save, flush()
 │   └── SampleData.kt          port of the prototype's sample()
 ├── domain/                    pure Kotlin: no Android imports, all unit-tested
 │   ├── RoutineResolver.kt     resolve(blocks, day, minuteOfDay) -> RoutineState
@@ -89,7 +89,7 @@ Data flows one way: repository and clock → ViewModels → UI state → composa
 
 - `DataStore<AppData>` with a JSON `Serializer` (`Json { ignoreUnknownKeys = true; encodeDefaults = true }`). File: `files/datastore/app_data.json`.
 - First start with no file: write `SampleData.create()` (SPEC D8).
-- `DataRepository` keeps the latest value in a `MutableStateFlow` the UI reads. `update(transform)` sets it immediately, then restarts a 500 ms debounce that calls `dataStore.updateData { latest }`. `flush()` writes immediately; `MainActivity.onStop` calls it.
+- `DataRepository` keeps the latest value in a `MutableStateFlow<AppData?>` the UI reads. It is `null` until the file has been read; screens wait for it, because a stand-in empty `AppData` would resolve to Bedtime on the first frame (dimming the screen in M4, becoming the tone baseline in M8). `update(transform)` sets it immediately, then restarts a 500 ms debounce that calls `dataStore.updateData { latest }`. `flush()` writes immediately; `MainActivity.onStop` calls it.
 - DataStore writes to a temporary file and renames it, so a crash during a write doesn't corrupt the saved file.
 - Unreadable file: a `ReplaceFileCorruptionHandler` copies it to `app_data.corrupt-<epochMillis>.json`, logs an error and starts from sample data.
 - `schemaVersion = 1`. If the model changes after release, bump it and migrate in the serializer.
@@ -166,5 +166,5 @@ Recommended phone settings (written up in M12's install guide): Motion smoothnes
 | Samsung Keyboard doesn't report Backspace on an empty field | Try a key-event check on the field; if unreliable, the ✕ button is the delete path (SPEC §3.7). Record the result in M6. |
 | Left panel needs ~380 dp of the 384 dp height | Body area takes the remaining height (SPEC §3.4); screenshot check in M3 |
 | Rotating with the keyboard open, or with a drag in progress | Test both on the phone in M6 and M7 |
-| Memory creeping up over hours (unreleased MediaPlayer, flows collected twice) | Release players after each play; collect flows with the lifecycle; 1-hour memory check every milestone |
+| Memory creeping up over hours (unreleased MediaPlayer, flows collected twice) | Release players after each play; collect flows with the lifecycle; 30-minute memory check at M2, M4, M7, M8 and M12; 24-hour run at M12 |
 | Wireless debugging drops (Samsung turns it off on Wi-Fi change or reboot) | Reconnect steps in CLAUDE.md |

@@ -1,6 +1,6 @@
 # Routine Manager: build plan
 
-Thirteen milestones, each sized for one Claude Code session. Order follows SPEC D21: dashboard first, then lists, then settings and sound, then the timetable editor, then the icon, the release, and finally the user guide.
+Thirteen milestones, each sized for one Claude Code session. Order follows SPEC D21: after M2, M3 with M11 beside it; then two parallel tracks (M5 → M6 → M7, and M4, M8 → M9 → M10); then M12 and M13.
 
 Checks marked **(owner)** need Android Studio's GUI (Layout Inspector, Profiler). Claude asks the owner to run them and reports the answer.
 
@@ -17,7 +17,7 @@ Checks marked **(owner)** need Android Studio's GUI (Layout Inspector, Profiler)
 | Milestone | Status |
 |---|---|
 | M1 Foundation: window, theme, font, icons | Done |
-| M2 Data, routine logic, minute clock | Not started |
+| M2 Data, routine logic, minute clock | Done |
 | M3 Dashboard and debug screen | Not started |
 | M4 Night and power | Not started |
 | M5 List menu, list view mode, portrait | Not started |
@@ -109,15 +109,36 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - `MainViewModel` producing `DashboardUi`; the placeholder screen shows clock text and routine state as plain text.
 
 **Acceptance criteria**
-- [ ] Unit tests for routine resolution: start inclusive, end exclusive; a block ending at 24:00; an empty day (Bedtime); back-to-back blocks; Free time between blocks; NEXT is `-` after the last block; weekday index Mon = 0.
-- [ ] Unit tests for formats: LEFT `4hr 30min`, `2hr`, `33min` with ceiling rounding; clock `12:05` `AM` at 00:05 and `PM` at 12:00; leading zero (`07:05`).
-- [ ] Unit tests: JSON round trip keeps everything; sample data has 9 blocks × 5 weekdays and 5 × 2 weekend days, and copies of one weekday row share a `groupId`.
-- [ ] Unit test: the ticker emits at the minute boundary, using a fake clock.
+- [x] Unit tests for routine resolution: start inclusive, end exclusive; a block ending at 24:00; an empty day (Bedtime); back-to-back blocks; Free time between blocks; NEXT is `-` after the last block; weekday index Mon = 0.
+- [x] Unit tests for formats: LEFT `4hr 30min`, `2hr`, `33min` with ceiling rounding; clock `12:05` `AM` at 00:05 and `PM` at 12:00; leading zero (`07:05`).
+- [x] Unit tests: JSON round trip keeps everything; sample data has 9 blocks × 5 weekdays and 5 × 2 weekend days, and copies of one weekday row share a `groupId`.
+- [x] Unit test: the ticker emits at the minute boundary, using a fake clock.
 
 **Install on the phone and verify**
-- [ ] The placeholder clock changes exactly on the minute (compare with the phone's status-bar clock).
-- [ ] Force-stop and relaunch: data is still there; `adb shell run-as com.jsk.routinemanager.debug cat files/datastore/app_data.json` prints the JSON.
-- [ ] Changing the phone's time zone updates the display at once.
+- [x] The placeholder clock changes exactly on the minute (compare with the phone's status-bar clock).
+- [x] Force-stop and relaunch: data is still there; `adb shell run-as com.jsk.routinemanager.debug cat files/datastore/app_data.json` prints the JSON.
+- [x] Changing the phone's time zone updates the display at once.
+
+**Notes**
+- **Unit tests:** 48 (47 new): `RoutineResolverTest` 11, `TimeFormatTest` 6, `ToneGainTest` 1, `AppDataJsonTest` 5, `SampleDataTest` 5, `DataRepositoryTest` 6, `MinuteTickerTest` 6, `DashboardUiTest` 7 (every row of the test-times table above, against `SampleData`). Lint: 0 errors, the 2 accepted M1 warnings.
+- **`DataRepository.data` is `StateFlow<AppData?>`**, null until the file has been read (a few ms after launch), instead of ARCHITECTURE's `StateFlow<AppData>`. Reading doesn't block the main thread, and no consumer ever sees a stand-in empty `AppData`: an empty day resolves to Bedtime, which would dim the screen (M4) or become the tone's baseline (M8) for the first frame. Consumers use `filterNotNull()`.
+- **First run:** DataStore only returns its default value when the file is missing; it doesn't write it. The repository checks whether `app_data.json` exists and, if not, writes `SampleData.create()` at once. Otherwise each launch before the first edit would make a new sample with new ids.
+- **Debounced save** follows ARCHITECTURE §4: the 500 ms timer restarts on every change, so a burst (typing) is written once, 500 ms after the last change; `flush()` in `onStop` writes anything pending.
+- **Unreadable file:** `keepCorruptCopyAndStartOver` copies it to `app_data.corrupt-<epochMillis>.json`, logs, and returns sample data, which DataStore writes over the bad file. A JVM test runs a real DataStore on a temp file.
+- **Ticker** (`time/MinuteTicker.kt`): emits now, then at each minute boundary of `AppClock`. A time change restarts the wait (`flatMapLatest`), so the next tick follows the new time. A second value in the same minute is dropped, so a time sync can't cause an extra redraw. `AppClock.speed` is in place for M3's fake clock: the wait is divided by it, and 0 (paused) waits for a change.
+- **Time-change receiver** (`Context.timeChanges()`): a `callbackFlow`, so it is registered only while the dashboard state is collected. `dumpsys activity broadcasts` shows it with `TIMEZONE_CHANGED`, `TIME_SET` and `DATE_CHANGED` while the app is visible, and no receiver after Home.
+- **`TimeFormat`** has only the formats M2 uses (clock, LEFT, day, date). The timetable range (`6:00am-11:30am`) and the overlap label (`7 AM`) come with M9 and M10, which test them.
+- **`TokenSheet.kt` is kept but no longer shown.** Deleting it made lint report the 24 icons as `UnusedResources` (it was their only reference). M3 replaces it; until every icon is used by a real screen, deleting it brings those warnings back. Decision (supervisor, M2): keep it unreferenced, and delete it in the milestone where the last icon gets a real use.
+- **Phone, 25 Oct (debug build, real clock):**
+  - First run wrote `files/datastore/app_data.json` (11,887 bytes): 55 blocks, 9/9/9/9/9/5/5 per day, sample lists and settings.
+  - Force-stop and relaunch: same md5 and modification time, same routine key on screen, so the file was read, not replaced.
+  - On the minute: screenshots taken on the phone itself. Captured between 18:58:59.70 and 18:59:00.08 it shows `06:58`; between 18:59:00.20 and 00.61 it shows `06:59` (LEFT 2min → 1min). At 19:00:00.15 Free time had changed to Personal (LEFT 2hr 30min, NEXT Wind down).
+  - Back from Home it showed the current minute at once (19:09:31: LEFT 2hr 21min, progress 6 %) and did not write the file.
+- **For M3's idle redraw check:** over 3 idle minutes `dumpsys gfxinfo … framestats` lists exactly 3 frames, 60.0 s apart, and "Slow UI thread" / "Frame deadline missed" are 3. "Total frames rendered", however, says **6**: this phone counts each drawn frame twice. Count framestats rows, or expect about 6.
+- **Coroutines:** the app runs kotlinx-coroutines 1.9.0 (M1 note); only APIs present in 1.9 are used. `flatMapLatest` needs `@OptIn(ExperimentalCoroutinesApi::class)`.
+- `./gradlew assembleRelease` builds with R8 and kotlinx.serialization (unsigned APK, 2.4 MB).
+- **Gate (25 Oct 2026):** clean `assembleDebug lintDebug testDebugUnitTest` passes (48 tests, 0 failures, 0 skipped; lint 0 errors, the 2 accepted M1 warnings). No crashes or ANRs. Saved data survived a reinstall. Idle redraw: 3 framestats frames in 3 minutes (one per minute). Memory, 30 minutes (19:17–19:47): 83,900 KB at minute 5, 82,993 KB at minute 30, flat. Owner: in split screen, picking Tokyo moved the clock 1 hour at once, and turning automatic time zone back on returned it to Kuala Lumpur at once.
+- **Owner decisions in M2:** saves happen 0.5 s after the last change (SPEC §3.5). The memory check now runs only at M2, M4, M7, M8 and M12, for 30 minutes (CLAUDE.md quality gate).
 
 ---
 
@@ -139,7 +160,6 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 **Install on the phone and verify**
 - [ ] Screenshots at each test time saved to `temp/screenshot/` with `adb exec-out screencap -p`; nothing clipped at 853 × 384 dp, in both landscape directions.
 - [ ] Fake clock at 600× runs through a whole day without a crash.
-- [ ] 1-hour memory check (quality gate) on the real clock.
 
 ---
 
@@ -160,7 +180,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [ ] From Mon 05:58 at 60×: at 06:00 brightness and the chosen theme return.
 - [ ] Battery rule, using `adb shell dumpsys battery unplug` and `adb shell dumpsys battery set level 10`: the screen times out after 2 minutes. After `adb shell dumpsys battery reset`, it stays on again. Always run the reset.
 - [ ] Tune `BEDTIME_BRIGHTNESS` with the owner in a dark room; record the value in the notes.
-- [ ] 1-hour memory check.
+- [ ] 30-minute memory check.
 
 ---
 
@@ -184,7 +204,6 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [ ] A collapsed category stays collapsed after a force-stop.
 - [ ] Rotating to portrait with a list open keeps it open; rotating back too.
 - [ ] Back goes from a list to the menu.
-- [ ] 1-hour memory check.
 
 ---
 
@@ -206,7 +225,6 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [ ] With Samsung Keyboard: Enter and Backspace-on-empty behave as specified. Record the Backspace result in the notes.
 - [ ] With the keyboard open in landscape, the focused field stays visible.
 - [ ] Rotating while editing keeps edit mode, the text and the focus.
-- [ ] 1-hour memory check.
 
 ---
 
@@ -226,7 +244,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [ ] All three gestures work in a list long enough to scroll, in To-Do and in Self.
 - [ ] A vertical swipe that starts on a handle scrolls the list.
 - [ ] Order and depth survive a force-stop.
-- [ ] 1-hour memory check.
+- [ ] 30-minute memory check.
 
 ---
 
@@ -247,7 +265,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [ ] Fake clock across Mon 07:59 → 08:00: the tone plays about 350 ms after the change. Crossing into Free time or Bedtime is silent.
 - [ ] With a podcast or music playing, it gets quieter during the tone and recovers after.
 - [ ] Light/Dark switch is correct on every screen built so far.
-- [ ] 1-hour memory check that includes at least one real block change.
+- [ ] 30-minute memory check that includes at least one real block change.
 
 ---
 
@@ -267,7 +285,6 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [ ] Create gesture works; a plain vertical swipe still scrolls.
 - [ ] The now line moves each minute; today's column follows the fake clock's day.
 - [ ] Portrait timetable is usable.
-- [ ] 1-hour memory check.
 
 ---
 
@@ -286,7 +303,6 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [ ] Create, edit, delete a block; overlap error shown.
 - [ ] With the keyboard open in landscape the dialog scrolls and Save is reachable.
 - [ ] Editing today's current block updates the dashboard at once; creating a block that covers now plays the tone (SPEC §3.1).
-- [ ] 1-hour memory check.
 
 ---
 

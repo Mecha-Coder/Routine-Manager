@@ -46,21 +46,23 @@ adb exec-out screencap -p > ../temp/screenshot/<name>.png
 adb shell run-as com.jsk.routinemanager.debug cat files/datastore/app_data.json
 ```
 
-Memory check: 1 hour, sampled every 5 minutes, with the app on screen. Run it in the background:
+Memory check: **only at M2, M4, M7, M8 and M12** (owner decision, M2; M12 also has the 24-hour run). 30 minutes, sampled every 5 minutes, with the app on screen. Run it in the background (if the phone is listed twice, add `-s <serial without (2)>` to `adb`):
 
 ```sh
-for i in $(seq 0 12); do date +%H:%M; adb shell dumpsys meminfo com.jsk.routinemanager.debug | grep "TOTAL PSS:"; sleep 300; done
+for i in $(seq 0 6); do date +%H:%M; adb shell dumpsys meminfo com.jsk.routinemanager.debug | grep "TOTAL PSS:"; sleep 300; done
 ```
 
-"Flat" means no steady upward trend after the first 5 minutes. As a rule of thumb, a rise of more than 5 MB between minute 5 and minute 60 fails and needs investigating.
+"Flat" means no steady upward trend after the first 5 minutes. As a rule of thumb, a rise of more than 5 MB between minute 5 and minute 30 fails and needs investigating.
 
 Idle redraw check (proves "redraw once per minute"): leave the app on the dashboard untouched, then
 
 ```sh
 adb shell dumpsys gfxinfo com.jsk.routinemanager.debug reset
 sleep 180
-adb shell dumpsys gfxinfo com.jsk.routinemanager.debug | grep "Total frames rendered"   # expect about 3
+adb shell dumpsys gfxinfo com.jsk.routinemanager.debug | grep "Total frames rendered"   # expect about 6 on this phone
 ```
+
+On this phone "Total frames rendered" reads 2 per idle minute, while `dumpsys gfxinfo com.jsk.routinemanager.debug framestats` lists 1 frame per minute (M2: 6 against 3 over 3 minutes, one window). So expect about 6, or about 3 rows in framestats. A per-second redraw would show about 180.
 
 Battery simulation (always reset afterwards):
 
@@ -75,7 +77,7 @@ adb shell dumpsys battery reset
 1. `./gradlew assembleDebug lintDebug testDebugUnitTest` passes. Lint has no errors and no new warnings.
 2. Installed and working on the phone, not the emulator. The milestone's "Install on the phone and verify" steps are done and reported.
 3. No crashes or ANRs during verification (the logcat checks above).
-4. Memory flat over a 1-hour run (the meminfo loop above). The owner confirms with Android Studio's profiler (Memory view).
+4. At M2, M4, M7, M8 and M12 only: memory flat over a 30-minute run (the meminfo loop above). The owner confirms with Android Studio's profiler (Memory view).
 
 Report each item as pass or fail with its evidence. A milestone with any skipped item is not done: say what was skipped and why.
 
