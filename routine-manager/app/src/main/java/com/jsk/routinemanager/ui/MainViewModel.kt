@@ -8,10 +8,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jsk.routinemanager.RoutineApp
 import com.jsk.routinemanager.data.Block
 import com.jsk.routinemanager.data.DataRepository
-import com.jsk.routinemanager.data.Theme
 import com.jsk.routinemanager.domain.ClockText
 import com.jsk.routinemanager.domain.RoutineResolver
 import com.jsk.routinemanager.domain.RoutineState
+import com.jsk.routinemanager.domain.ScreenRules
 import com.jsk.routinemanager.domain.TimeFormat
 import com.jsk.routinemanager.domain.dayIndex
 import com.jsk.routinemanager.domain.minuteOfDay
@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDateTime
 
@@ -91,14 +92,30 @@ class MainViewModel(repository: DataRepository, minuteTicks: Flow<LocalDateTime>
     private val blocks = repository.data.filterNotNull().map { it.blocks }.distinctUntilChanged()
 
     /**
-     * Null until the saved data is loaded. Changes once a minute and when the blocks change. The
-     * ticker runs only while the UI collects this, i.e. while the app is visible.
+     * One ticker for every collector, so the app wakes once per minute. It runs only while something
+     * collects, i.e. while the app is visible. The last minute is dropped when it stops, so a return
+     * from the background never starts from a stale minute.
      */
-    val dashboard: StateFlow<DashboardUi?> = combine(blocks, minuteTicks, ::dashboardUi)
+    private val minute = minuteTicks.shareIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(replayExpirationMillis = 0),
+        replay = 1,
+    )
+
+    /** Null until the saved data is loaded. Changes once a minute and when the blocks change. */
+    val dashboard: StateFlow<DashboardUi?> = combine(blocks, minute, ::dashboardUi)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
 
-    val darkTheme: StateFlow<Boolean> = repository.data
-        .map { it?.settings?.theme == Theme.DARK }
+    /**
+     * The routine at every minute tick (even when it is unchanged) and whenever the blocks change,
+     * on every screen and in both orientations. ScreenPolicy checks the battery and Bedtime on each.
+     */
+    val routine: Flow<RoutineState> = combine(blocks, minute, RoutineResolver::resolve)
+
+    private val theme = repository.data.filterNotNull().map { it.settings.theme }.distinctUntilChanged()
+
+    /** The chosen theme, or dark during Bedtime whatever the setting (SPEC §3.2). */
+    val darkTheme: StateFlow<Boolean> = combine(theme, routine, ScreenRules::darkPalette)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
 
     companion object {

@@ -193,16 +193,35 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - `domain/ScreenRules.kt` (keep on? dim?) and `screen/ScreenPolicy.kt`: battery rule, Bedtime dim with forced dark palette, tap-to-brighten for 30 s that swallows the first tap, restore when Bedtime ends.
 
 **Acceptance criteria**
-- [ ] Unit tests: keep-on for each combination of charging / not charging and level 14 / 15; dim only in Bedtime, not in Free time.
-- [ ] Dark palette complete on the dashboard.
+- [x] Unit tests: keep-on for each combination of charging / not charging and level 14 / 15; dim only in Bedtime, not in Free time.
+- [x] Dark palette complete on the dashboard.
 
 **Install on the phone and verify** (debug fake clock)
-- [ ] Jump to Mon 23:30: screen dims and turns dark.
-- [ ] Tap: brightens, and the tap does nothing else. 30 s after the last touch it dims again.
-- [ ] From Mon 05:58 at 60×: at 06:00 brightness and the chosen theme return.
-- [ ] Battery rule, using `adb shell dumpsys battery unplug` and `adb shell dumpsys battery set level 10`: the screen times out after 2 minutes. After `adb shell dumpsys battery reset`, it stays on again. Always run the reset.
-- [ ] Tune `BEDTIME_BRIGHTNESS` with the owner in a dark room; record the value in the notes.
+- [x] Jump to Mon 23:30: screen dims and turns dark.
+- [x] Tap: brightens, and the tap does nothing else. 30 s after the last touch it dims again.
+- [x] From Mon 05:58 at 60×: at 06:00 brightness and the chosen theme return.
+- [x] Battery rule, using `adb shell dumpsys battery unplug` and `adb shell dumpsys battery set level 10`: the screen times out after 2 minutes. After `adb shell dumpsys battery reset`, it stays on again. Always run the reset. (Screen-off itself interrupted by a touch; evidence accepted by the supervisor, see notes.)
+- [x] Tune `BEDTIME_BRIGHTNESS` with the owner in a dark room; record the value in the notes. (0.05, owner.)
 - [ ] 30-minute memory check.
+
+**Notes**
+- **Code:** `domain/ScreenRules.kt` holds the decisions (`keepScreenOn`, `dim`, `darkPalette`); `screen/ScreenPolicy.kt` applies them to the window. `MainActivity` feeds it `MainViewModel.routine` while STARTED, and `dispatchTouchEvent` asks it first.
+- **One ticker:** `MainViewModel` now shares the minute ticker (`shareIn`, `WhileSubscribed(replayExpirationMillis = 0)`, so a return from the background never starts from a stale minute). The dashboard, `routine` (ScreenPolicy, every screen and both orientations) and `darkTheme` all use it, so the app still wakes once per minute. For M8: `BlockChime` can use `routine` too. The debug screen still runs its own ticker while it is open (debug only).
+- **Keep-screen-on:** checked at every tick from the sticky `ACTION_BATTERY_CHANGED` (null receiver, nothing registered). Charging = `EXTRA_PLUGGED != 0` (AC, USB, wireless), so a phone held at 85 % by "Protect battery" still counts. The flag and the brightness are written only when they change, because every window change re-lays out the window.
+- **Tap-to-brighten:** the whole gesture whose DOWN arrives while dim is swallowed (DOWN to UP/CANCEL), so a long press can't fire either. The 30 s wait starts when the finger lifts and a new DOWN cancels it, so the screen never dims under a finger. When Bedtime starts at a tick the screen dims at once, even right after a touch (supervisor, M4: only a touch made while dim counts). Going to the background cancels the timer; back in Bedtime, the screen starts dim.
+- **For M10:** Compose `Dialog` is its own window, so its touches don't pass through `Activity.dispatchTouchEvent`. The editor dialog must route its touches through `ScreenPolicy.swallows`, or the first tap on a dim dialog would act. The dim itself (an activity window attribute) should still apply while the dialog is open; check it on the phone in M10.
+- **Panel facts (dumpsys display):** brightness floor 0.011764706 (3/255). A window value below it is clamped: 0.002 and 0.01 both gave `Display Brightness=0.011764706`; 0.02 and 0.05 applied as set. Default 0.4; the system's pre-timeout dim is 0.05. In a ~10–80 lux room the owner's auto brightness was 0.0157, so the starting value 0.05 is brighter than the phone runs in dim light.
+- **`BEDTIME_BRIGHTNESS` = 0.05, confirmed by the owner (SPEC §3.2).** During M4 the debug screen briefly had a "Bedtime brightness" chip row (0.012 to 0.08) that changed the value live; the owner chose to remove it, so it and its DebugEntry hooks are gone. To re-tune, change the constant: anything below the panel floor 0.0118 looks the same as 0.0118.
+- **Unit tests:** 64 (9 new, `ScreenRulesTest`). Lint: 0 errors, the 2 accepted M1 warnings. `assembleRelease` builds.
+- **Phone, 25 Oct (debug build with the tuning chips, since removed; phone really unplugged, 75–78 %; notch on the right):**
+  - Mon 23:30 (paused): window `sbrt=0.05`, `mBrightnessReason=override(…MainActivity)`, `Display Brightness=0.05`. Dashboard and debug screen dark: sampled pixels bg `#000000`, divider `#353535`, clock and gear `#EDEDED`, date and "Routine" `#B2B2B2` (`temp/screenshot/m4-home-bedtime-dark.png`, `m4-debug-bedtime.png`).
+  - While dim, a tap on the debug slider only brightened (`mBrightnessReason=automatic`, the time label unchanged); the next tap moved the slider. A 1 s long press on the gear while dim only brightened, and the debug screen did not open.
+  - Re-dim: 28–31 s after a single tap; with a second touch 20 s later, 30–32 s after that touch (poll every ~2.5 s). In a fine poll: exactly 30.0 s after the last touch.
+  - From Mon 05:20 at 60× (so the 30 s re-dim falls before 06:00): dim at +30.0 s; brightness back at +34.9 s, when the clock reached 06:00, with the light palette (`m4-debug-0600.png`).
+  - Bars swiped in at Bedtime: white icons on black, readable (`m4-bars-bedtime.png`). On the light palette the system puts a grey scrim behind them (`m4-bars-day.png`). The icon colour follows the phone's dark mode (on now); recheck in M8 with the phone in light mode.
+  - Idle redraw, live clock, 21:06:20–21:09:20: 3 framestats frames, 60.01 s and 60.00 s apart ("Total frames rendered" 6, M2 note).
+  - Battery rule: `unplug` + `set level 10` at 21:11:03 → `FLAG_KEEP_SCREEN_ON` cleared at the 21:12:00 tick; `reset` at 21:12:04 → back at the 21:13:00 tick, and the screen was still `Awake` at 21:15:34, 3.5 min after the last touch. Second run: level 10 at 21:18:22, flag cleared at the 21:19:00 tick; the system started its pre-timeout dim at 21:20:40 (`policy=DIM`). **The timeout counts from the tick that clears the flag, not from the last touch:** the window wake lock is ON_AFTER_RELEASE, so its release counts as user activity. A real touch at 21:20:50 (someone using the phone) woke it about 10 s before screen-off, so the screen-off itself was not observed; the supervisor accepted this evidence without a rerun. `dumpsys battery reset` ran at 21:21:43.
+  - No crashes, no ANRs.
 
 ---
 
