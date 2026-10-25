@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Launcher icon, Concept C (SPEC D24): the dashboard's clock "07:05" above its progress bar.
+    108 x 108 dp adaptive-icon canvas. The digits are Google Sans Flex outlines (wght 600, tabular
+    figures; SIL Open Font License 1.1), converted to paths in M11.
+    Monochrome layer for themed icons: the system tints it; the track is 38 % alpha
+    so it stays apart from the fill.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M34.27 52.32Q31.85 52.32 30.43 50.39Q29 48.46 29 45.33Q29 42.21 30.43 40.29Q31.85 38.36 34.27 38.36Q36.7 38.36 38.13 40.29Q39.56 42.21 39.56 45.33Q39.56 48.46 38.13 50.39Q36.7 52.32 34.27 52.32ZM34.27 49.95Q35.63 49.95 36.35 48.72Q37.07 47.5 37.07 45.33Q37.07 43.16 36.35 41.95Q35.63 40.73 34.27 40.73Q32.94 40.73 32.22 41.95Q31.5 43.16 31.5 45.33Q31.5 47.5 32.22 48.72Q32.94 49.95 34.27 49.95Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M42.25 51.19L47.9 40.96L47.88 40.89H41.3V38.68H50.53V40.95L44.47 52.37L42.25 51.19Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54.23 43.57Q53.56 43.57 53.09 43.11Q52.63 42.66 52.63 41.99Q52.63 41.33 53.09 40.87Q53.56 40.42 54.23 40.42Q54.9 40.42 55.36 40.87Q55.82 41.33 55.82 41.99Q55.82 42.66 55.36 43.11Q54.9 43.57 54.23 43.57ZM54.23 50.24Q53.56 50.24 53.09 49.78Q52.63 49.32 52.63 48.65Q52.63 47.99 53.09 47.54Q53.56 47.08 54.23 47.08Q54.9 47.08 55.36 47.54Q55.82 47.99 55.82 48.65Q55.82 49.32 55.36 49.78Q54.9 50.24 54.23 50.24Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M62.66 52.32Q60.24 52.32 58.82 50.39Q57.39 48.46 57.39 45.33Q57.39 42.21 58.82 40.29Q60.24 38.36 62.66 38.36Q65.09 38.36 66.52 40.29Q67.96 42.21 67.96 45.33Q67.96 48.46 66.52 50.39Q65.09 52.32 62.66 52.32ZM62.67 49.95Q64.02 49.95 64.74 48.72Q65.46 47.5 65.46 45.33Q65.46 43.16 64.74 41.95Q64.02 40.73 62.67 40.73Q61.33 40.73 60.61 41.95Q59.89 43.16 59.89 45.33Q59.89 47.5 60.61 48.72Q61.33 49.95 62.67 49.95Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M74.1 52.32Q72.84 52.32 71.93 51.94Q71.03 51.57 70.36 50.88Q69.69 50.2 69.17 48.84L71.48 47.99Q71.76 48.8 72.11 49.21Q72.45 49.63 72.93 49.85Q73.41 50.07 74.09 50.07Q75.14 50.07 75.82 49.42Q76.51 48.78 76.51 47.74Q76.51 46.75 75.85 46.1Q75.2 45.45 74.12 45.45Q73.51 45.45 73.02 45.67Q72.54 45.88 71.95 46.48L69.71 45.59L70.61 38.68H78.11V40.89H72.55L72.09 44.28L72.17 44.3Q72.67 43.91 73.32 43.7Q73.97 43.49 74.76 43.49Q76.59 43.49 77.8 44.69Q79 45.89 79 47.76Q79 49.71 77.64 51.01Q76.28 52.32 74.1 52.32Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M33,60.5H55A4,4 0 0 1 55,68.5H33A4,4 0 0 1 33,60.5Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillAlpha="0.38"
+        android:pathData="M67,60.5H75A4,4 0 0 1 75,68.5H67A4,4 0 0 1 67,60.5Z" />
+</vector>
