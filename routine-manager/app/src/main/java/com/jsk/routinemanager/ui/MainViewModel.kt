@@ -9,6 +9,9 @@ import com.jsk.routinemanager.RoutineApp
 import com.jsk.routinemanager.data.AppData
 import com.jsk.routinemanager.data.Block
 import com.jsk.routinemanager.data.DataRepository
+import com.jsk.routinemanager.data.GroceryCategory
+import com.jsk.routinemanager.data.OutlineItem
+import com.jsk.routinemanager.data.newId
 import com.jsk.routinemanager.domain.ClockText
 import com.jsk.routinemanager.domain.GroceryOps
 import com.jsk.routinemanager.domain.OutlineOps
@@ -108,12 +111,39 @@ class MainViewModel(private val repository: DataRepository, minuteTicks: Flow<Lo
     /** The list shown in the list panel, or null for the menu. Survives rotation; not saved (SPEC §3.5). */
     val openList: StateFlow<ListKey?> = opened.asStateFlow()
 
+    /** Opening a list shows it in view mode. */
     fun showList(list: ListKey) {
+        editingState.value = false
         opened.value = list
     }
 
+    /** Leaving the list also leaves edit mode and cleans up the edits (README › Saving edits). */
     fun showMenu() {
+        finishEditing()
         opened.value = null
+    }
+
+    private val editingState = MutableStateFlow(false)
+
+    /** Edit mode for the open list. Survives rotation; not saved (SPEC §3.5). */
+    val editing: StateFlow<Boolean> = editingState.asStateFlow()
+
+    fun startEditing() {
+        editingState.value = true
+    }
+
+    /** Done: drops empty items and nameless empty categories, and fixes depths (README › Saving edits). */
+    fun finishEditing() {
+        if (!editingState.value) return
+        editingState.value = false
+        repository.update {
+            it.copy(
+                todo = OutlineOps.cleanup(it.todo),
+                self = OutlineOps.cleanup(it.self),
+                room = OutlineOps.cleanup(it.room),
+                grocery = GroceryOps.cleanup(it.grocery),
+            )
+        }
     }
 
     /** The saved lists for the list panel; null until loaded. */
@@ -130,6 +160,45 @@ class MainViewModel(private val repository: DataRepository, minuteTicks: Flow<Lo
 
     fun toggleCollapsed(categoryId: String) =
         repository.update { it.copy(grocery = GroceryOps.toggleCollapsed(it.grocery, categoryId)) }
+
+    // Edit mode. The functions that add an item return its id, so the list can focus it.
+
+    private fun updateOutline(list: ListKey, transform: (List<OutlineItem>) -> List<OutlineItem>) =
+        repository.update {
+            when (list) {
+                ListKey.TODO -> it.copy(todo = transform(it.todo))
+                ListKey.SELF -> it.copy(self = transform(it.self))
+                ListKey.ROOM -> it.copy(room = transform(it.room))
+                ListKey.GROCERY -> error("Grocery is not an outline list")
+            }
+        }
+
+    fun editOutlineText(list: ListKey, id: String, text: String) = updateOutline(list) { OutlineOps.editText(it, id, text) }
+
+    fun insertOutlineItemAfter(list: ListKey, id: String): String =
+        newId().also { new -> updateOutline(list) { OutlineOps.insertAfter(it, id, new) } }
+
+    fun appendOutlineItem(list: ListKey): String = newId().also { new -> updateOutline(list) { OutlineOps.append(it, new) } }
+
+    fun deleteOutlineItem(list: ListKey, id: String) = updateOutline(list) { OutlineOps.delete(it, id) }
+
+    private fun updateGrocery(transform: (List<GroceryCategory>) -> List<GroceryCategory>) =
+        repository.update { it.copy(grocery = transform(it.grocery)) }
+
+    fun renameCategory(categoryId: String, name: String) = updateGrocery { GroceryOps.rename(it, categoryId, name) }
+
+    fun deleteCategory(categoryId: String) = updateGrocery { GroceryOps.deleteCategory(it, categoryId) }
+
+    fun addCategory(): String = newId().also { new -> updateGrocery { GroceryOps.addCategory(it, new) } }
+
+    fun editGroceryItem(categoryId: String, itemId: String, text: String) =
+        updateGrocery { GroceryOps.editItem(it, categoryId, itemId, text) }
+
+    fun deleteGroceryItem(categoryId: String, itemId: String) = updateGrocery { GroceryOps.deleteItem(it, categoryId, itemId) }
+
+    /** After [afterItemId], or at the end of the category when it is null. */
+    fun addGroceryItem(categoryId: String, afterItemId: String?): String =
+        newId().also { new -> updateGrocery { GroceryOps.addItem(it, categoryId, afterItemId, new) } }
 
     // List edits don't touch the blocks, so they don't recompute the dashboard.
     private val blocks = repository.data.filterNotNull().map { it.blocks }.distinctUntilChanged()

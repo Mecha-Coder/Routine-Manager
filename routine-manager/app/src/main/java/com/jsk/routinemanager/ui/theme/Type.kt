@@ -85,6 +85,9 @@ object RmType {
     /** A selected grocery item. */
     val bodySelected = body.copy(fontWeight = FontWeight(700))
 
+    /** A list item's text field in edit mode: 16 / 400 at the input's `normal` line height. */
+    val field = style(16f, 400)
+
     /** "Nothing here. Tap ✎ to add." (prototype: 15 / 400). */
     val emptyState = style(15f, 400)
     val badge = style(13f, 600)

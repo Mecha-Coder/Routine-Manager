@@ -299,13 +299,72 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - Cleanup when leaving edit mode or the list (README › Saving edits).
 
 **Acceptance criteria**
-- [ ] Unit tests for `OutlineOps` (insert after subtree, delete with promote, normalize so no child is orphaned, cleanup of empty items) and `GroceryOps` cleanup (trim, drop empty items, drop empty nameless categories, rename the rest to "Untitled").
-- [ ] Typing doesn't lag; saves are debounced (at most about 2 disk writes per second while typing).
+- [x] Unit tests for `OutlineOps` (insert after subtree, delete with promote, normalize so no child is orphaned, cleanup of empty items) and `GroceryOps` cleanup (trim, drop empty items, drop empty nameless categories, rename the rest to "Untitled").
+- [x] Typing doesn't lag; saves are debounced (at most about 2 disk writes per second while typing).
 
 **Install on the phone and verify**
-- [ ] With Samsung Keyboard: Enter and Backspace-on-empty behave as specified. Record the Backspace result in the notes.
-- [ ] With the keyboard open in landscape, the focused field stays visible.
-- [ ] Rotating while editing keeps edit mode, the text and the focus.
+- [x] With Samsung Keyboard: Enter and Backspace-on-empty behave as specified. Record the Backspace result in the notes. **Done with Gboard**, the phone's default keyboard; Samsung Keyboard not tested (supervisor decision, M6; see notes).
+- [x] With the keyboard open in landscape, the focused field stays visible.
+- [x] Rotating while editing keeps edit mode, the text and the focus.
+
+**Notes**
+- **Unit tests:** 99 (19 new): `OutlineOpsTest` +11, `GroceryOpsTest` +8. Lint: 0 errors, the 2 accepted M1 warnings.
+- **Where things are:**
+  - `domain/OutlineOps`: `subtreeEnd`, `normalize`, `editText`, `insertAfter`, `append`, `delete` (children promoted, then normalised), `cleanup`, `MAX_DEPTH`. `domain/GroceryOps`: `rename`, `deleteCategory`, `addCategory`, `editItem`, `deleteItem`, `addItem` (after an item, or at the end), `cleanup`, `UNTITLED`. All ported from the prototype. As in the prototype, cleanup trims category names only; kept item text is not trimmed.
+  - `MainViewModel`:
+    - `editing` (survives rotation, not saved);
+    - `startEditing` and `finishEditing`, which cleans all four lists, like the prototype's `purge`;
+    - `showList` opens a list in view mode, and `showMenu` cleans up when editing;
+    - one function per edit. The ones that add an item return its id, so the list can focus it.
+  - `ListDetail` now takes the ViewModel instead of one lambda per action (there would be 16). `OutlineEditList` (in `OutlineList.kt`) and `GroceryEditList` (in `GroceryList.kt`) take plain lambdas.
+  - Shared pieces: `UnderlinedField`, `AddButton` ("+ Add task", "+ Add item"), `RmIconButton(tint)`, `Modifier.bleed(start, end)` (edit rows reach 30 dp left and 8 dp right, as in the prototype), `RmType.field` (16 / 400 at the input's `normal` line height).
+- **No list-editing ViewModel yet** (ARCHITECTURE §3 allows one). The field to focus is a `remember` in the edit list. The activity isn't recreated on rotation (`configChanges`), so the composition, the fields' text state and the focus all survive. M7 can decide where the drag session lives.
+- **Text fields:** state-based `BasicTextField` (`TextFieldState`). The field owns its text while shown and pushes every change through `snapshotFlow` to `repository.update`. Typing never waits for the saved data to come back, so the cursor can't jump and no key is lost; the repository's 500 ms debounce does the writing.
+- **Keyboard choices (owner, M6; SPEC §3.7):**
+  - The action key is Next (→|) on item fields: Enter inserts the new item and focuses it, and the keyboard stays open.
+  - It is Done (✓) on the category name, where it only closes the keyboard; the prototype does nothing there.
+  - The placeholder uses `textHint`. The prototype renders #696969; the README has no placeholder token.
+  - Sentences capitalisation.
+  - After Backspace or ✕ deletes the focused item, nothing keeps the focus and the keyboard closes, as in the prototype. ✕ on another row leaves the focus where it was.
+- **Backspace on an empty field:** the phone's default keyboard is **Gboard** (`com.google.android.inputmethod.latin`). Samsung Keyboard is installed but not the default.
+  - A temporary InputConnection probe (since removed) showed that Gboard sends `KEYCODE_DEL` as a key event on every backspace, empty field or not. `onPreviewKeyEvent` catches it, so Backspace-on-empty works.
+  - **Samsung Keyboard was not tested** (supervisor decision: Gboard is the owner's real keyboard). ✕ stays the supported delete path (SPEC §3.7).
+  - If a keyboard ever sends nothing for an empty field, Compose's `InterceptPlatformTextInput` can wrap the InputConnection and catch `deleteSurroundingText`.
+- **Keyboard in landscape:**
+  - Gboard covers the bottom 375 px (200 dp). The list's scroll area ends above it (`imePadding`).
+  - Compose sets `IME_FLAG_NO_FULLSCREEN`, so there is no full-screen text box in landscape.
+  - Compose's text field keeps only its **cursor line** above the keyboard (its focus rect is the cursor), which left a low field's underline under the keyboard. `UnderlinedField` now also brings the whole field into view while focused, whenever the keyboard's height changes. Checked: the underline sits at the keyboard's top edge, also for newly added fields at the bottom.
+- **Phone, 25 Oct (debug build, landscape, notch on the right, Gboard; fake clock Mon 09:05; keys tapped with `adb shell input tap`):**
+  - Layout against the prototype in Chrome (`temp/screenshot/m6-proto-*.png` vs `m6-phone-*.png`), dp from the list pane's left edge:
+    - To-Do edit: handle icon 6.4 (prototype 6), number 32.5 (32), field 58.7 (58), child number 56.5 (56), child field 97.6 (97.1), "Add task" text 58.7 (58).
+    - Grocery edit: name field 29.9 (30), item field 92.3 (92), "Add item" text 88.5 (88).
+    - ✕ and `delete` end at the content edge (34 dp notch padding).
+    - Rows are 83 px (44.27 dp), as in M5.
+  - Enter:
+    - on "Clean room": a new focused "2)";
+    - on the child "Complete places": a new focused "2.2)";
+    - on the parent "Sabah": a new top-level "3)" after its children;
+    - in a grocery item: a new item right after it.
+  - Backspace on empty: deleting "Sabah" letter by letter, then one more backspace, removed it and promoted its children. Same for an empty grocery item. On an empty category name it does nothing.
+  - Saves, from an on-device poll of `app_data.json`'s mtime every 0.1 s:
+    - 9 keys in 1.1 s: 1 write, 0.53 s after the last key;
+    - 5 keys 0.73 s apart: 5 writes (1.4/s). The debounce caps writes at 2/s.
+  - Typing, 20-key burst (`gfxinfo`): 50th / 90th / 99th percentile frame 26 / 32 / 38 ms. That is one slow frame per key (about 8–10 ms recomposition plus about 8 ms draw, debug build). No dropped keys.
+  - Cleanup:
+    - Done drops an empty to-do.
+    - Back while editing: the first Back closes the keyboard (edit mode stays); the second goes to the menu and drops the empty item.
+    - Grocery Done: a nameless category with items became "Untitled"; an empty new category was dropped; a named category with no items was kept.
+    - Emptying Self with ✕ shows "Nothing here. Tap ✎ to add." (first seen on the phone here; M5 note).
+  - Rotation (the supervisor rotated over adb), with To-Do in edit mode, a new item "Dotate" focused and Gboard open:
+    - In portrait, edit mode, the text, the focus and the keyboard stayed, and typing went on into the same field.
+    - Back in ROTATION_270, the same; the field sat just above the keyboard.
+    - Screenshots: `m6-rot-portrait.png`, `m6-rot-back-landscape.png`.
+  - After the probe was removed, Enter and Backspace-on-empty were checked again on the final build. No crashes or ANRs (`logcat -b crash`, `ANR in com.jsk`: empty). Sample data was reset, and the app was left on the live dashboard.
+- **Phone facts:**
+  - An app locker (`com.gamemalt.applocker`) now and then starts an invisible 2×2 px activity (`ServiceLauncherActivity`) on top. It takes the focus: the app pauses, and `uiautomator dump` shows the locker's window. `adb shell am start -n com.jsk.routinemanager.debug/com.jsk.routinemanager.MainActivity` brings the app back without restarting it.
+  - The display also rotated by itself for 13 s once (phone moved?); taps sent meanwhile land in the wrong place. Check `mDisplayRotation` before a tap sequence.
+- **Known gap:** cleanup runs on Done and Back only. If the process dies in edit mode, empty items already saved stay and show as empty numbered rows (process death is not handled specially, ARCHITECTURE §3).
+- **For M7:** the handle is a 28 × 44 dp box with the `drag_indicator` icon (content description "Drag to move or indent"), still inert. `OutlineOps.subtreeEnd`, `normalize` and `MAX_DEPTH` are ready for the drag maths.
 
 ---
 

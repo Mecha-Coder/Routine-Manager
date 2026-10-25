@@ -1,5 +1,6 @@
 package com.jsk.routinemanager.ui.lists
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,13 +26,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.jsk.routinemanager.R
 import com.jsk.routinemanager.data.AppData
+import com.jsk.routinemanager.ui.MainViewModel
 import com.jsk.routinemanager.ui.components.RmIconButton
+import com.jsk.routinemanager.ui.theme.RmShapes
 import com.jsk.routinemanager.ui.theme.RmTheme
 import com.jsk.routinemanager.ui.theme.RmType
 
 /**
- * One list in the list panel (README › Screens › 3), in view mode: header with back, the list's
- * name and Edit, then the list, scrolling.
+ * One list in the list panel (README › Screens › 3): header with back, the list's name and Edit
+ * (or Done in edit mode), then the list, scrolling. The scrolling part ends above the keyboard,
+ * so the focused field can stay in view.
  *
  * @param data null until the saved data is loaded; only the header shows until then.
  * @param notchSides the panel edges that touch the screen edge, where the notch may be (SPEC D18).
@@ -39,10 +44,8 @@ import com.jsk.routinemanager.ui.theme.RmType
 fun ListDetail(
     list: ListKey,
     data: AppData?,
-    onBack: () -> Unit,
-    onToggleDone: (itemId: String) -> Unit,
-    onToggleGroceryItem: (categoryId: String, itemId: String) -> Unit,
-    onToggleCollapsed: (categoryId: String) -> Unit,
+    editing: Boolean,
+    viewModel: MainViewModel,
     notchSides: WindowInsetsSides,
     modifier: Modifier = Modifier,
 ) {
@@ -50,13 +53,17 @@ fun ListDetail(
     Column(modifier) {
         Header(
             list.label,
-            onBack,
+            editing,
+            onBack = viewModel::showMenu,
+            onEdit = viewModel::startEditing,
+            onDone = viewModel::finishEditing,
             Modifier.windowInsetsPadding(notch.union(WindowInsets(left = 14.dp, top = 16.dp, right = 14.dp, bottom = 6.dp))),
         )
         Column(
             Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .windowInsetsPadding(
                     notch.only(WindowInsetsSides.Horizontal)
@@ -65,8 +72,18 @@ fun ListDetail(
         ) {
             if (data == null) return@Column
             when (list) {
-                ListKey.GROCERY -> {
-                    GroceryList(data.grocery, onToggleGroceryItem, onToggleCollapsed)
+                ListKey.GROCERY -> if (editing) {
+                    GroceryEditList(
+                        data.grocery,
+                        onRename = viewModel::renameCategory,
+                        onDeleteCategory = viewModel::deleteCategory,
+                        onAddCategory = viewModel::addCategory,
+                        onItemTextChange = viewModel::editGroceryItem,
+                        onDeleteItem = viewModel::deleteGroceryItem,
+                        onAddItem = viewModel::addGroceryItem,
+                    )
+                } else {
+                    GroceryList(data.grocery, viewModel::toggleGroceryItem, viewModel::toggleCollapsed)
                     // As in the prototype: categories without items still show, above this line.
                     if (data.grocery.all { it.items.isEmpty() }) EmptyState()
                 }
@@ -76,18 +93,42 @@ fun ListDetail(
                         ListKey.SELF -> data.self
                         else -> data.room
                     }
-                    // Only To-Do items can be ticked; tapping a Self or Room item does nothing.
-                    OutlineList(items, onToggleDone.takeIf { list == ListKey.TODO })
-                    if (items.isEmpty()) EmptyState()
+                    if (editing) {
+                        val todo = list == ListKey.TODO
+                        OutlineEditList(
+                            items,
+                            placeholder = if (todo) "New task" else "New item",
+                            addLabel = if (todo) "Add task" else "Add item",
+                            onTextChange = { id, text -> viewModel.editOutlineText(list, id, text) },
+                            onInsertAfter = { id -> viewModel.insertOutlineItemAfter(list, id) },
+                            onAppend = { viewModel.appendOutlineItem(list) },
+                            onDelete = { id -> viewModel.deleteOutlineItem(list, id) },
+                        )
+                    } else {
+                        // Only To-Do items can be ticked; tapping a Self or Room item does nothing.
+                        OutlineList(items, viewModel::toggleDone.takeIf { list == ListKey.TODO })
+                        if (items.isEmpty()) EmptyState()
+                    }
                 }
             }
         }
     }
 }
 
-/** Back on the left, the name centred, Edit on the right (the prototype's `1fr auto 1fr` grid). */
+/**
+ * Back on the left, the name centred, and Edit, or in edit mode Done (a 40 dp `textPrimary` circle
+ * with a `check`), on the right (the prototype's `1fr auto 1fr` grid).
+ */
 @Composable
-private fun Header(title: String, onBack: () -> Unit, modifier: Modifier) {
+private fun Header(
+    title: String,
+    editing: Boolean,
+    onBack: () -> Unit,
+    onEdit: () -> Unit,
+    onDone: () -> Unit,
+    modifier: Modifier,
+) {
+    val c = RmTheme.colors
     Row(
         modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -98,8 +139,21 @@ private fun Header(title: String, onBack: () -> Unit, modifier: Modifier) {
         }
         Text(title, style = RmType.listTitle, maxLines = 1, softWrap = false)
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-            // Edit mode comes in M6.
-            RmIconButton(R.drawable.ic_edit, "Edit list", onClick = {}, iconSize = 22.dp)
+            if (editing) {
+                RmIconButton(
+                    R.drawable.ic_check,
+                    "Done editing",
+                    onDone,
+                    Modifier
+                        .padding(4.dp)
+                        .background(c.textPrimary, RmShapes.pill),
+                    size = 40.dp,
+                    iconSize = 22.dp,
+                    tint = c.onPrimary,
+                )
+            } else {
+                RmIconButton(R.drawable.ic_edit, "Edit list", onEdit, iconSize = 22.dp)
+            }
         }
     }
 }

@@ -67,18 +67,10 @@ private fun ListPanel(
         val badges by viewModel.badges.collectAsStateWithLifecycle()
         ListMenu(badges, viewModel::showList, onSettings, onDebug, notchSides, modifier)
     } else {
-        // System Back goes from a list to the menu.
+        // System Back goes from a list to the menu, leaving edit mode.
         BackHandler(onBack = viewModel::showMenu)
         val data by viewModel.data.collectAsStateWithLifecycle()
-        ListDetail(
-            list,
-            data,
-            onBack = viewModel::showMenu,
-            onToggleDone = viewModel::toggleDone,
-            onToggleGroceryItem = viewModel::toggleGroceryItem,
-            onToggleCollapsed = viewModel::toggleCollapsed,
-            notchSides = notchSides,
-            modifier = modifier,
-        )
+        val editing by viewModel.editing.collectAsStateWithLifecycle()
+        ListDetail(list, data, editing, viewModel, notchSides, modifier)
     }
 }
