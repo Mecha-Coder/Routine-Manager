@@ -25,7 +25,7 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 | M7 Drag: indent and reorder | Not started |
 | M8 Settings and sound | Done |
 | M8b Two replacement tones | Done |
-| M9 Weekly timetable | Not started |
+| M9 Weekly timetable | Done |
 | M10 Block editor dialog | Not started |
 | M11 App icon | Done |
 | M12 Release APK and install guide | Not started |
@@ -542,12 +542,74 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - Long-press 300 ms on empty time (10 ms haptic), drag with 15-minute snap, bounded by neighbouring blocks, dashed ghost with range label; 15 minutes or less becomes 60 (bounded). Release opens the editor (placeholder until M10). Tapping a block opens it too.
 
 **Acceptance criteria**
-- [ ] Unit tests: create snapping and bounds, the ≤ 15 min → 60 min rule, range format (including `12:00am` for a 24:00 end).
+- [x] Unit tests: create snapping and bounds, the ≤ 15 min → 60 min rule, range format (including `12:00am` for a 24:00 end).
 
 **Install on the phone and verify**
-- [ ] Create gesture works; a plain vertical swipe still scrolls.
-- [ ] The now line moves each minute; today's column follows the fake clock's day.
-- [ ] Portrait timetable is usable.
+- [x] Create gesture works; a plain vertical swipe still scrolls.
+- [x] The now line moves each minute; today's column follows the fake clock's day.
+- [x] Portrait timetable is usable.
+
+**Notes**
+- **Where things are:**
+  - `domain/BlockRules.kt` holds the create gesture's rules, ported from the prototype's `colDown`/`colMove`/`colUp`: `createAnchor`, `dragRange` and `releaseRange`, with `TimeRange` and `CreateAnchor`. M10 adds validation and group saving to the same file.
+  - `TimeFormat` gains `blockRange` (`6:00am-11:30am`), `hour` (`7 AM`), `time` (`7:00 AM`, the prototype's `lbl`) and `ghostRange` (`7:00 AM – 8:00 AM`).
+  - `ui/timetable/TimetableScreen.kt` replaces M8's placeholder.
+  - `ui/editor/BlockEditorPlaceholder.kt` holds `EditorRequest` (`New(day, range)` or `Edit(blockId)`) and a placeholder card that shows what the editor would open with. M10 replaces the card. The request is a `remember` in the timetable: it survives rotation (no recreation) and is dropped when the timetable closes, as the prototype's `closeRoutine` clears the sheet.
+  - `MainViewModel` gains `timetableBlocks`, `now` and `currentBlockId`, all from the one shared minute ticker. `now` uses `WhileSubscribed(replayExpirationMillis = 0)`, so a timetable opened later never scrolls to a stale minute.
+- **One minute redraw:** only the now line reads the minute, in its `offset { }` lambda, so a tick moves it without recomposing the grid. `today` is a `derivedStateOf` (only the chips and the two affected columns recompose at midnight). The current block's id changes only at block changes. Each day's block list keeps its instance until the blocks change (`groupBy` in a `remember`), so unchanged columns skip.
+- **Create gesture** (`detectCreate`, a `pointerInput` on each day column):
+  - The finger must stay within 8 dp for 300 ms.
+  - Moving first leaves the events to `verticalScroll`, so a swipe scrolls; a consumed event also cancels.
+  - After the long press every move is consumed, so the grid can't scroll while drawing.
+  - The ghost is a state in its column, set only when the snapped range changes.
+  - A press on a block returns at once (`createAnchor` is null), so the block's own tap opens it. A hold then drag on a block scrolls, as in the prototype (`touch-action: pan-y`).
+- **Haptic:** a 10 ms `VibrationEffect.createOneShot` with `USAGE_TOUCH`, which needs `android.permission.VIBRATE` (granted at install, nothing shown to the user). The README asks for exactly 10 ms. `USAGE_TOUCH` follows the phone's touch-vibration setting. The helper is private to the timetable; M7's 12 ms pick-up can share it once both are merged. (Supervisor accepted, M9.)
+- **Editor placeholder** is drawn in the activity's window, not as a Compose `Dialog`, so at Bedtime `ScreenPolicy` still swallows the first touch on it (M4 note). Its scrim takes every touch.
+- **Decisions where the README is silent (supervisor accepted, M9):**
+  - Ghost label `7:00 AM – 8:00 AM`, the prototype's `lbl(s) – lbl(e)`. The README says only "range label".
+  - Hour labels use `outlineStrong`: the prototype's #8e8e8e is the grey the README maps to `outlineStrong` for the drag handle and the "Add category" border.
+  - The line under the day chips (prototype #ebebeb) uses `gridLine`.
+  - The ghost's fill is `textPrimary` at 5 % opacity (prototype rgba(0,0,0,.05)), with a 1.5 dp dashed `textPrimary` outline.
+- **Ghost dashes:** Chrome draws the prototype's `1.5px dashed` as about 3 dp dashes with 2 dp gaps (measured at 4× zoom), so the ghost uses 3 / 2 dp. A first try at 3 × stroke for both (4.5 / 4.5 dp) looked sparser than the prototype on the phone.
+- **Bug found on the phone:** the first build opened at 12 AM instead of now − 1.5 h. The grid had no height until the blocks loaded, so the scroll on open was cut to 0. The scroll content now has its full 1056 dp height from the first frame.
+- **Unit tests:** 123 (16 new: `BlockRulesTest` 12, `TimeFormatTest` +4). Lint: 0 errors, the 2 accepted M1 warnings. `assembleRelease` builds: 3,399,958 bytes, 65.6 KB more than d93abe0.
+- **Phone, 26 Oct (debug build, landscape, notch on the right; fake clock Mon 09:30 paused unless noted; gestures sent with `input motionevent` DOWN, a 0.6 s wait, MOVE steps, UP):**
+  - **Layout against the prototype in Chrome at the same fake time** (`temp/screenshot/m9-proto-timetable.png` vs `m9-phone-light.png`), dp, phone / prototype:
+    - title y 22.4 / 22.5
+    - chip text y 70.4 / 70
+    - 8 AM label centre y 108.8 / 108.0, right edge 48.0 / 48.0
+    - block text x 67.2 / 67.0, y 113.1 / 112.0
+
+    Columns are 109 dp against 115, because the phone is narrower and pads 34 dp for the notch, so the ghost label wraps onto two lines.
+  - **Create (Sat, free 12:00–14:00):**
+    - Hold then drag down: ghost `12:15 PM – 1:30 PM`, then the placeholder "Sat, 12:15 PM – 1:30 PM".
+    - Hold without a drag: 12:30–1:30 PM. At 13:30 the hour is cut at Errands: 1:30–2:00 PM.
+    - Dragging past Errands stops at 2:00 PM. Dragging up past Work Session1 stops at 12:00 PM (12:00–1:15 PM).
+    - `dumpsys vibrator_manager`: a one-shot `Step=10ms`, usage TOUCH, from the app.
+    - One run showed no placeholder in the UI dump. Repeated runs (6 + 4) all worked, and the missing one is most likely a failed `uiautomator dump`.
+  - **What must not create:**
+    - A vertical move before 300 ms scrolls and creates nothing; a sideways one does nothing; a 3 dp wobble still creates.
+    - Swipes on empty time and on blocks scroll, with no editor. A hold then drag on a block scrolls 185 px (200 minus the touch slop).
+    - A tap on a block opens "Edit block" with its group's days (Work Session1: Mon–Fri, 8:00 AM – 12:00 PM).
+    - ✕ and Back close the placeholder and stay on the timetable.
+  - **Now line, fake clock at 1×:** it moved at each fake minute boundary (dot centre 337 → 339 → 340 → 342 → 343 px; one minute is 1.375 px).
+  - **Today follows the fake clock:**
+    - After a jump to Wed 10:04, the Wed chip is in the accent, Wed's Work Session1 is current and the now line is on Wednesday (`m9-phone-wed.png`).
+    - With the timetable left open across Wed 23:59 → Thu at 1×, the chip moved to Thu.
+  - **Dark and Bedtime:**
+    - Dark theme: blocks in `textPrimary` with black text, the current block in mint, a light dashed ghost, the placeholder in dark (`m9-phone-dark*.png`).
+    - At Mon 11:28 PM: `Display Brightness=0.05` set by our activity, dark palette, no block in the accent, and the grid opens at its bottom (`m9-phone-bedtime.png`).
+    - While dim, the first tap on a block only brightened; the second opened "Edit block: Wind down".
+  - **Idle redraw** with the timetable open at 1×:
+    - 3 minutes: "Total frames rendered" 6, i.e. 3 frames (the phone counts each frame twice).
+    - 3 min 51 s with the dot sampled every 15 s: 4 dot moves and "Total frames rendered" 8, i.e. 4 frames.
+    - In both runs framestats lists the drawn frames 60.0 s apart, plus one row flagged 8 (skipped: nothing drawn) about 20 ms after the last drawn frame, and one fewer drawn frame than ticks. The cause wasn't found.
+  - **Rotation (the supervisor rotated over adb to ROTATION_0 and back, then restored the defaults):**
+    - An open "New block" placeholder survived to portrait; an open "Edit block" placeholder survived back to landscape, with the timetable and its scroll.
+    - Portrait matches the prototype's layout (`m9-proto-portrait.png`). Columns are about 45 dp, so titles shorten to "W…" and the ghost's label wraps and is clipped, as the prototype's would.
+    - In portrait, create (Sat 12:15 PM – 1:30 PM), swipes both ways and a tap on a block (Edit "Personal") all work.
+  - **Afterwards:** no crashes or ANRs (`logcat -b crash`, `ANR in com.jsk`). The debug clock was set back to Live and the app left on the dashboard, light theme. No memory check at M9 (CLAUDE.md).
+- **Gate (26 Oct 2026, on `main` after M8b):** clean `assembleDebug lintDebug testDebugUnitTest assembleRelease` passes (125 tests, 0 failures; lint 0 errors, the 2 accepted warnings). Installed; the timetable opens from Settings at night with the now line and the dark palette; no crashes or ANRs. No memory check at M9.
 
 ---
 

@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
                         onBack = { viewModel.show(Screen.Home) },
                         onTimetable = { viewModel.show(Screen.Timetable) },
                     )
-                    Screen.Timetable -> TimetableScreen(onBack = { viewModel.show(Screen.Settings) })
+                    Screen.Timetable -> TimetableScreen(viewModel, onBack = { viewModel.show(Screen.Settings) })
                     Screen.Debug -> DebugEntry.Screen(container, onBack = { viewModel.show(Screen.Home) })
                 }
             }

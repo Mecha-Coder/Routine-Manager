@@ -279,6 +279,24 @@ class MainViewModel(
     val darkTheme: StateFlow<Boolean> = combine(theme, routine, ScreenRules::darkPalette)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
 
+    /** The weekly timetable's blocks (README › Screens › 5); null until loaded. */
+    val timetableBlocks: StateFlow<List<Block>?> = blocks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
+
+    /**
+     * The timetable's minute, for today's column, the now line and the scroll on open. Null until
+     * the first tick, and null again once the timetable closes, so reopening it never scrolls to a
+     * stale minute.
+     */
+    val now: StateFlow<LocalDateTime?> = minute
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), null)
+
+    /** The block on now, which the timetable fills with the accent; null in Free time and at Bedtime. */
+    val currentBlockId: StateFlow<String?> = routine
+        .map { routine -> (routine as? RoutineState.Running)?.takeUnless { it.isFreeTime }?.key }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
+
     companion object {
         val Factory = viewModelFactory {
             initializer {

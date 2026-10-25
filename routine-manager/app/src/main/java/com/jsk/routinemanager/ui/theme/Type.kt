@@ -114,6 +114,10 @@ object RmType {
     /** The Theme segmented control's Light / Dark and the volume's `60%` (prototype: 14 / 500). */
     val control = style(14f, 500)
 
+    /** The timetable's day chips, Mon…Sun (prototype: 12 / 600). */
+    val timetableDay = style(12f, 600)
+
+    /** Also the create gesture's ghost label. */
     val timetableBlockTitle = style(10.5f, 600)
 
     /** Drawn at 72 % opacity by the timetable. */

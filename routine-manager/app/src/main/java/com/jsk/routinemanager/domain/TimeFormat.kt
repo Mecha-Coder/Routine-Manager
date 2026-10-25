@@ -36,6 +36,28 @@ object TimeFormat {
         }
     }
 
+    /** A timetable block's range: `6:00am-11:30am`. A block ending at 1440 ends at `12:00am`. */
+    fun blockRange(start: Int, end: Int): String = "${lowerTime(start)}-${lowerTime(end)}"
+
+    private fun lowerTime(minuteOfDay: Int): String {
+        val h = minuteOfDay / 60 % 24
+        return "${hour12(h)}:${pad2(minuteOfDay % 60)}${if (h < 12) "am" else "pm"}"
+    }
+
+    private fun hour12(h: Int) = if (h % 12 == 0) 12 else h % 12
+
+    /** The timetable's hour labels: `12 AM`, `7 AM`, `12 PM`; hour 24 is `12 AM` again. */
+    fun hour(hour: Int): String = "${hour12(hour % 24)} ${if (hour % 24 < 12) "AM" else "PM"}"
+
+    /** `7:00 AM`, no leading zero (the prototype's `lbl`); 1440 is `12:00 AM`. */
+    fun time(minuteOfDay: Int): String {
+        val h = minuteOfDay / 60 % 24
+        return "${hour12(h)}:${pad2(minuteOfDay % 60)} ${if (h < 12) "AM" else "PM"}"
+    }
+
+    /** The create gesture's ghost label: `7:00 AM – 8:00 AM`. */
+    fun ghostRange(start: Int, end: Int): String = "${time(start)} – ${time(end)}"
+
     /** `Mon` for day index 0. */
     fun day(dayIndex: Int): String = days[dayIndex]
 

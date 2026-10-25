@@ -41,6 +41,34 @@ class TimeFormatTest {
     }
 
     @Test
+    fun timetableBlocksShowTheirFullRangeInLowerCaseWithoutLeadingZero() {
+        assertEquals("6:00am-11:30am", TimeFormat.blockRange(6 * 60, 11 * 60 + 30))
+        assertEquals("12:00pm-1:15pm", TimeFormat.blockRange(12 * 60, 13 * 60 + 15))
+        assertEquals("12:15am-1:00am", TimeFormat.blockRange(15, 60))
+    }
+
+    @Test
+    fun aTimetableBlockEndingAtMidnightEndsAtTwelveAm() {
+        assertEquals("10:30pm-12:00am", TimeFormat.blockRange(22 * 60 + 30, 1440))
+    }
+
+    @Test
+    fun hourLabelsRunFromTwelveAmToTwelveAmAtTheBottomOfTheGrid() {
+        assertEquals("12 AM", TimeFormat.hour(0))
+        assertEquals("7 AM", TimeFormat.hour(7))
+        assertEquals("12 PM", TimeFormat.hour(12))
+        assertEquals("11 PM", TimeFormat.hour(23))
+        assertEquals("12 AM", TimeFormat.hour(24))
+    }
+
+    @Test
+    fun theCreateGhostShowsItsRangeWithEndAtMidnightAsTwelveAm() {
+        assertEquals("7:00 AM – 8:15 AM", TimeFormat.ghostRange(7 * 60, 8 * 60 + 15))
+        assertEquals("11:45 PM – 12:00 AM", TimeFormat.ghostRange(23 * 60 + 45, 1440))
+        assertEquals("12:00 PM", TimeFormat.time(12 * 60))
+    }
+
+    @Test
     fun dayAndDateAreShortEnglishWithoutYearOrLeadingZero() {
         assertEquals("Mon", TimeFormat.day(0))
         assertEquals("Sun", TimeFormat.day(6))

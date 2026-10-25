@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- The 10 ms tick when a timetable long press starts a block (README › Haptics). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- No backup: data lives only on the phone (SPEC D14). -->
     <application
         android:name=".RoutineApp"
