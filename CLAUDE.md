@@ -2,6 +2,10 @@
 
 Personal Android app for one user, sideloaded on a Samsung Galaxy A07. The phone sits on a stand as an always-on dashboard: landscape shows a clock and the current routine block beside four lists (To-Do, Grocery, Self, Room); portrait shows the lists only. Kotlin + Jetpack Compose, local data only, no network.
 
+## Supervised builds
+
+Milestones normally run through the supervisor: the owner types `/supervise` (runbook: `.claude/skills/supervise/SKILL.md`). The supervisor briefs one `milestone-builder` subagent per milestone (rules: `.claude/agents/milestone-builder.md`). A guard script (`.claude/hooks/builder-guard.sh`) blocks builders from committing, pushing, uninstalling, changing phone settings and editing the decision docs. Builders can't talk to the owner; they report to the supervisor, which relays. The supervisor's state lives in `temp/orchestration/log.md`.
+
 ## Before starting a milestone
 
 1. Read `design/README.md` (the base spec) and everything in `docs/`: `SPEC.md` (decisions that override the README), `ARCHITECTURE.md`, `BUILD_PLAN.md`.

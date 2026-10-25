@@ -6,7 +6,7 @@ Checks marked **(owner)** need Android Studio's GUI (Layout Inspector, Profiler)
 
 ## How to run a milestone
 
-1. Start a fresh session from the repo root: "Read CLAUDE.md, then do milestone M<n>."
+1. Normally the owner types `/supervise` and the supervisor runs the milestones one by one (see CLAUDE.md › Supervised builds). To run one by hand instead, start a fresh session from the repo root: "Read CLAUDE.md, then do milestone M<n>."
 2. Read [design/README.md](../design/README.md), [SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md) and this milestone.
 3. Build only this milestone's scope. If it won't fit in one session, stop at a working point, split the rest into M<n>b here, and say so.
 4. Pass the **quality gate** in [CLAUDE.md](../CLAUDE.md) and every acceptance criterion below. The last step is always "Install on the phone and verify", except in M13, which changes no app code.
