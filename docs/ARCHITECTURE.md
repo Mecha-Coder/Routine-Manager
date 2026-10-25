@@ -23,7 +23,7 @@ Add only these (ask before adding anything else):
 
 Deliberately not used: Room, Hilt/Koin, Navigation, WorkManager, AlarmManager, Accompanist, `material-icons-extended`, image loaders.
 
-Existing versions: AGP 9.4.1 (built-in Kotlin), Kotlin 2.2.10, Gradle 9.6.0, Compose BOM 2026.02.01. The serialization plugin version must match the Kotlin version.
+Versions: AGP 9.4.1 (built-in Kotlin), Kotlin 2.4.21 (SPEC D23), Gradle 9.6.0, Compose BOM 2026.09.00. The serialization plugin version must match the Kotlin version.
 
 ## 2. Package layout
 
@@ -138,8 +138,8 @@ Recommended phone settings (written up in M12's install guide): Motion smoothnes
 ## 9. Theme, fonts, icons
 
 - `RmColors` holds every README colour token; `LightColors` and `DarkColors` hold the final values. Provided through a `CompositionLocal`. `MaterialTheme` gets a colour scheme built from the same values, so stock Material components never bring their own colours. No hard-coded colours outside `ui/theme`.
-- **Google Sans Flex** (SIL Open Font License 1.1): download the variable font from Google Fonts. With fonttools in a temporary virtual environment (outside the repo), keep only the weight axis (pin the others to their defaults) and subset to Latin-1 plus the punctuation the UI uses (– “ ” ×; the ✎ in the empty-state text is the `edit` icon, not a character). Ship `res/font/google_sans_flex.ttf` and its `OFL.txt`. Weights 400/500/600/700 via `FontVariation.Settings(FontVariation.weight(n))`. All numbers use `fontFeatureSettings = "tnum"`.
-- **Icons:** the Material Symbols Rounded icons listed in the README, as vector drawables (`res/drawable/ic_<name>.xml`) in the fill/weight variants the README gives. Take the SVGs from Google's `material-design-icons` GitHub repo and copy their path data into VectorDrawable XML. Apache 2.0. No icon font.
+- **Google Sans Flex** (SIL Open Font License 1.1): download the variable font from Google Fonts. With fonttools in a temporary virtual environment (outside the repo), keep only the weight axis (pin the others to their defaults) and subset to Latin-1 plus the punctuation the UI uses (– “ ” ×; the ✎ in the empty-state text is the `edit` icon, not a character), keeping the `tnum` feature (`pyftsubset --layout-features+=tnum`). Ship `res/font/google_sans_flex.ttf` and its licence as `assets/google_sans_flex_OFL.txt` (`res/font` can't hold a `.txt`). Weights 400/500/600/700 via `FontVariation.Settings(FontVariation.weight(n))`. All numbers use `fontFeatureSettings = "tnum"`.
+- **Icons:** the Material Symbols Rounded icons listed in the README, as vector drawables (`res/drawable/ic_<name>.xml`) in the fill/weight variants the README gives. Take the SVGs from Google's `material-design-icons` GitHub repo and copy their path data into VectorDrawable XML. Their viewBox is `0 -960 960 960`, so the path goes inside a `<group android:translateY="960">`. Apache 2.0. No icon font.
 
 ## 10. Lists, gestures, timetable
 

@@ -43,7 +43,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D11 | Notifications | None. No notification permission requested. | Confirms |
 | D12 | Debug screen | Hidden debug screen with the prototype's TEST controls, **debug builds only**. Rules in §3.6. | Confirms README suggestion |
 | D13 | Build variants | Debug builds install as a separate app, `com.jsk.routinemanager.debug`, named "Routine Manager (debug)". Test builds never touch the real app's data. The real app (`com.jsk.routinemanager`) is first installed in the last milestone. | Adds |
-| D14 | Backup | None. `android:allowBackup="false"`. Data exists only on the phone. | Adds |
+| D14 | Backup | No cloud backup: `android:allowBackup="false"`, no backup or data-extraction rules files. Phone-to-phone transfer (for example Samsung Smart Switch to a new phone) is **not blocked**: on Android 12+ it may copy the app's data. Lint's `DataExtractionRules` warning is accepted. (Owner, M1.) | Adds |
 | D15 | Reboot and lock | No auto-start after reboot, no showing over the lock screen. The owner unlocks and reopens the app. | Adds |
 | D16 | SDK levels | `compileSdk` and `targetSdk` **37**, `minSdk` 31. | Changes (README says target 36) |
 | D17 | Design canvas | The prototype's screen is **880 × 396 dp**. The README's 900 × 416 includes the prototype's 10 dp phone frame. The phone is 27 dp narrower and 12 dp shorter than the design. | Corrects |
@@ -52,6 +52,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D20 | Project "done" | A 24-hour run on the phone (§5). | Adds |
 | D21 | Build order | Dashboard first, then lists, then settings and sound, then the timetable editor, then icon, release and user guide. See [BUILD_PLAN.md](BUILD_PLAN.md). | Plan |
 | D22 | User guide | A root `README.md` walks through every feature with phone screenshots and links to the prototype on GitHub Pages so people can try it in a browser (M13). It lives on GitHub only; the app gets no help screen. | Adds |
+| D23 | Kotlin version | Kotlin **2.4.21**, up from the wizard's 2.2.10, so the serialization plugin and `kotlinx-serialization-json` can be current. The Compose compiler and serialization plugins use the same version. (Owner, M1.) | Adds |
 
 ## 3. Detailed rules
 

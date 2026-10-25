@@ -16,7 +16,7 @@ Checks marked **(owner)** need Android Studio's GUI (Layout Inspector, Profiler)
 
 | Milestone | Status |
 |---|---|
-| M1 Foundation: window, theme, font, icons | Not started |
+| M1 Foundation: window, theme, font, icons | Done |
 | M2 Data, routine logic, minute clock | Not started |
 | M3 Dashboard and debug screen | Not started |
 | M4 Night and power | Not started |
@@ -59,18 +59,42 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - A temporary token sheet screen showing both palettes, the type scale and all icons. M3 replaces it.
 
 **Acceptance criteria**
-- [ ] Quality gate passes; the outdated-library lint warnings are gone.
-- [ ] Every README colour token exists in both palettes with the README's values.
-- [ ] Numbers render with tabular figures (digits line up in a column).
-- [ ] Font file size recorded in the notes below.
+- [x] Quality gate passes; the outdated-library lint warnings are gone.
+- [x] Every README colour token exists in both palettes with the README's values.
+- [x] Numbers render with tabular figures (digits line up in a column).
+- [x] Font file size recorded in the notes below.
 
 **Install on the phone and verify**
-- [ ] Installs as "Routine Manager (debug)". With the owner's OK, uninstall the wizard's starter app `com.jsk.routinemanager` (it holds no data).
-- [ ] With auto-rotate **off**, turning the phone rotates the app: portrait, landscape, reverse landscape.
-- [ ] Status and navigation bars are hidden; an edge swipe shows them briefly.
-- [ ] Screen stays on for more than 3 minutes (the phone's timeout is 2).
-- [ ] The notch covers nothing in either landscape direction.
-- [ ] Text is visibly Google Sans Flex (compare with the prototype open in Chrome).
+- [x] Installs as "Routine Manager (debug)". With the owner's OK, uninstall the wizard's starter app `com.jsk.routinemanager` (it holds no data).
+- [x] With auto-rotate **off**, turning the phone rotates the app: portrait, landscape, reverse landscape.
+- [x] Status and navigation bars are hidden; an edge swipe shows them briefly.
+- [x] Screen stays on for more than 3 minutes (the phone's timeout is 2).
+- [x] The notch covers nothing in either landscape direction.
+- [x] Text is visibly Google Sans Flex (compare with the prototype open in Chrome).
+
+**Notes**
+- **Font file:** `res/font/google_sans_flex.ttf` = **107,480 bytes (105 KB)**. Source: google/fonts `ofl/googlesansflex/GoogleSansFlex[ROND,opsz,slnt,wdth,wght].ttf` (3.9 MB). fonttools 4.60.2 in a scratch venv:
+  - `fonttools varLib.instancer <src> opsz=drop wdth=drop ROND=drop slnt=drop wght=400:700` pins opsz 18, wdth 100, ROND 0, slnt 0 (the font's defaults). Google Fonts serves the prototype a file with only a `wght` axis and these same pinned values, so the app matches the prototype.
+  - `pyftsubset --unicodes=U+0020-007E,U+00A0-00FF,U+2013,U+2018,U+2019,U+201C,U+201D,U+2026 --layout-features+=tnum --name-IDs=0,1,2,3,4,5,6,13,14`. **pyftsubset drops `tnum` by default**, so it must be added. Besides ARCHITECTURE's list (– “ ” ×), the subset keeps ‘ ’ (typed apostrophes) and … (Compose's ellipsis character). Other characters fall back to the system font.
+  - Licence: `assets/google_sans_flex_OFL.txt` (`res/font` can't hold a .txt), and in the font's name IDs 13/14. The OFL declares no Reserved Font Name, so the subset keeps its name.
+- **Tabular figures:** the font's default digits are proportional (`1` = 735 units, `0` = 1290); with `tnum` all are 1290. Every `RmType` style and every Material style sets `tnum`. The token sheet shows `tnum` and `pnum` columns side by side on the phone.
+- **Icons:** 24 vector drawables built from the SVGs in google/material-design-icons (`symbols/web/<name>/materialsymbolsrounded/<name>[_fill1|_wght600]_24px.svg`). The path data is copied unchanged into a 960 × 960 viewport inside a `translateY=960` group, because the SVG viewBox is `0 -960 960 960`. The repo's ready-made Android XMLs use long absolute paths (settings: 1796 characters) that trigger lint `VectorPath` (> 800); the SVG paths don't. `autoMirrored` is kept where Google sets it.
+- **Kotlin 2.4.21 (SPEC D23):** AGP 9 has a runtime dependency on KGP 2.2.10. Per the AGP 9.0 release notes, a newer one goes on the root `buildscript` classpath: `classpath(libs.kotlin.gradle.plugin)`, using the catalog's `kotlin` version. Proof:
+  - `./gradlew buildEnvironment` shows `kotlin-gradle-plugin:2.2.10 -> 2.4.21`, `compose-compiler-gradle-plugin:2.4.21` and `kotlin-serialization:2.4.21`.
+  - The build uses `kotlin-compiler-embeddable-2.4.21`, and compiled classes carry Kotlin metadata `mv=[2,4,0]`.
+- **Library versions:** core-ktx 1.19.1, lifecycle 2.11.0 (runtime-ktx, runtime-compose, viewmodel-compose), activity-compose 1.13.0, Compose BOM **2026.09.00** (UI 1.12.1, Material3 1.4.0), datastore 1.3.0, kotlinx-serialization-json **1.12.0** (built with Kotlin 2.4.10), kotlinx-coroutines-test 1.11.0, test ext junit 1.3.0, espresso 3.7.0. kotlin-stdlib resolves to 2.4.21.
+- **For M2:** the app's runtime gets kotlinx-coroutines-core 1.9.0 (through AndroidX), while unit tests run on 1.11.0 (pulled in by coroutines-test).
+- **Lint:** 17 warnings → 2, 0 errors. Both remaining warnings are accepted:
+  - Gradle 9.8.2 (`AndroidGradlePluginVersion`): Gradle stays at 9.6.0.
+  - `DataExtractionRules` on `allowBackup`: SPEC D14 allows phone-to-phone transfer, so no rules file is added.
+
+  `DiscouragedApi` on `screenOrientation="sensor"` is suppressed in the manifest, with the reason: Android 16 ignores it only when the smallest width is 600 dp or more, and this phone is 384 dp.
+- **Removed wizard leftovers:** example unit and instrumented tests (the instrumented one asserted the release package name), `colors.xml`, the two backup XMLs, the activity's redundant label.
+- **Phone facts:** on the stand the display is `ROTATION_270`, even with auto-rotate off (`accelerometer_rotation=0`, `user_rotation=0`), because the activity requests `SCREEN_ORIENTATION_SENSOR`. The notch is on the **right** edge (x 1536–1600 px = 34 dp) and the navigation bar's slot is on the left. After an edge swipe both bars report `visible=true`; 5 s later both report `visible=false`. They stay hidden after Home and back.
+- **Screen-on checks need a simulated unplug:** the phone has the developer option "Stay awake" on, so while plugged in `dumpsys power` shows `mStayOn=true` and the screen never times out, whatever the app does. With `dumpsys battery unplug` (`mStayOn=false`, timeout 120 s), the app stayed `Awake` through 201 s of no touch. M4's battery-rule test must also unplug, and must always end with `dumpsys battery reset`.
+- **Gate (25 Oct 2026):** clean `assembleDebug lintDebug testDebugUnitTest` passes (1 test, 0 failures; lint 0 errors, the 2 accepted warnings). No crashes or ANRs. Memory, 1 hour sampled every 5 minutes (16:49–17:49): 101,182 KB at minute 5, 100,413 KB at minute 60 (−0.8 MB), flat. Owner on the phone: rotation follows the phone in all three positions with auto-rotate off; nothing under the notch in any position; font accepted as Google Sans Flex after a same-size side-by-side with the prototype (the phone draws it slightly thinner than Chrome on a Mac).
+- **Profiler check skipped (owner decision):** Live Telemetry attached on 25 Oct, but Android Studio's UI froze and no graph could be read. Its log shows the profiler going through the duplicate adb entry ("… (2)") and re-selecting the device about once a second; that this caused the freeze is a guess. The owner accepted the 1-hour meminfo run as the memory evidence for M1. Before a Profiler check, drop any duplicate adb entry first. While the profiler is attached, its agent stays loaded in the app (PSS rose from about 100 MB to 119 MB), so never take meminfo samples during or after a profiler session without restarting the app.
+- **adb duplicate keeps coming back:** the phone reappeared as "… (2)" twice during this gate and broke a plain `adb shell` loop. Long-running adb loops should use `adb -s "<serial without (2)>"`.
 
 ---
 

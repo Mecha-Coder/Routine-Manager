@@ -1,0 +1,4 @@
+<resources>
+    <!-- Debug builds install as a separate app (SPEC D13). -->
+    <string name="app_name">Routine Manager (debug)</string>
+</resources>

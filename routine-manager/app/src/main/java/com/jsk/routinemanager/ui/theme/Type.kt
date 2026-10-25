@@ -2,33 +2,100 @@ package com.jsk.routinemanager.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.jsk.routinemanager.R
 
-// Set of Material typography styles to start with
-val Typography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
-    )
-    /* Other default text styles to override
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
-    */
+/** Google Sans Flex, subset variable font with only the weight axis (ARCHITECTURE §9). */
+val GoogleSansFlex = FontFamily(
+    listOf(400, 500, 600, 700).map { w ->
+        Font(
+            R.font.google_sans_flex,
+            weight = FontWeight(w),
+            variationSettings = FontVariation.Settings(FontVariation.weight(w)),
+        )
+    }
 )
+
+// Tabular figures on every style, so numbers never shift width as they change (README › Typography).
+private val Base = TextStyle(fontFamily = GoogleSansFlex, fontFeatureSettings = "tnum")
+
+private fun style(size: Float, weight: Int) =
+    Base.copy(fontSize = size.sp, fontWeight = FontWeight(weight))
+
+/**
+ * The README type scale (README › Typography). Colours are applied by the screens.
+ * Compose has no text-transform: callers uppercase [label] text themselves.
+ */
+object RmType {
+    val clock = style(104f, 500).copy(letterSpacing = (-4).sp, lineHeight = 0.84.em)
+    val clockAmPm = style(20f, 500)
+    val day = style(21f, 600)
+    val date = style(21f, 400)
+
+    /** "Lists", "Settings", "Weekly routine". */
+    val screenTitle = style(22f, 500)
+    val listTitle = style(20f, 500)
+    val dialogTitle = style(20f, 500)
+
+    val routineHeading = style(20f, 600)
+    val blockTime = style(20f, 600)
+    val blockTimeAmPm = style(12f, 600)
+
+    /** CURRENT and NEXT block titles. */
+    val routineValue = style(19f, 700)
+    val leftValue = style(17f, 600)
+    val subRoutine = style(17f, 400).copy(lineHeight = 1.3.em)
+    val bedtime = style(22f, 600)
+
+    val menuLabel = style(17f, 500)
+    val groceryCategory = style(17f, 600)
+    val body = style(16f, 400).copy(lineHeight = 1.35.em)
+
+    /** A selected grocery item. */
+    val bodySelected = body.copy(fontWeight = FontWeight(700))
+    val badge = style(13f, 600)
+
+    /** List text buttons ("Add task", "Add item") and the "Add category" pill. */
+    val button = style(15f, 600)
+
+    /** Settings "Preview sound" pill and the block editor's buttons. */
+    val buttonSmall = style(14f, 600)
+
+    /** LEFT, CURRENT, NEXT. */
+    val label = style(11f, 600).copy(letterSpacing = 0.08.em)
+    val settingsSection = style(13f, 600)
+
+    val timetableBlockTitle = style(10.5f, 600)
+
+    /** Drawn at 72 % opacity by the timetable. */
+    val timetableBlockRange = style(10.5f, 400)
+    val timetableHour = style(10f, 500)
+}
+
+private fun TextStyle.rm() = merge(Base)
+
+/** Material's own styles in Google Sans Flex, for any stock component that uses them. */
+internal val MaterialTypography = Typography().run {
+    Typography(
+        displayLarge = displayLarge.rm(),
+        displayMedium = displayMedium.rm(),
+        displaySmall = displaySmall.rm(),
+        headlineLarge = headlineLarge.rm(),
+        headlineMedium = headlineMedium.rm(),
+        headlineSmall = headlineSmall.rm(),
+        titleLarge = titleLarge.rm(),
+        titleMedium = titleMedium.rm(),
+        titleSmall = titleSmall.rm(),
+        bodyLarge = bodyLarge.rm(),
+        bodyMedium = bodyMedium.rm(),
+        bodySmall = bodySmall.rm(),
+        labelLarge = labelLarge.rm(),
+        labelMedium = labelMedium.rm(),
+        labelSmall = labelSmall.rm(),
+    )
+}
