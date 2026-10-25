@@ -12,9 +12,11 @@ Personal Android app for one user, sideloaded on a Samsung Galaxy A07. The phone
 ## Layout
 
 - `design/`: handoff README, prototype, source sounds. Read-only.
-- `docs/`: SPEC, ARCHITECTURE, BUILD_PLAN (and INSTALL from M12).
+- `docs/`: SPEC, ARCHITECTURE, BUILD_PLAN (INSTALL from M12; `screenshots/` for the user guide from M13).
+- `README.md` (from M13): the user guide shown on GitHub.
 - `routine-manager/`: the Android Studio project and Gradle root. Package and release app id `com.jsk.routinemanager`; debug app id `com.jsk.routinemanager.debug`.
-- `temp/`: scratch files and phone screenshots (`temp/screenshot/`). Not part of the app.
+- `temp/`: scratch files. Verification screenshots go in `temp/screenshot/`, which git ignores.
+- GitHub: `origin` = https://github.com/Mecha-Coder/Routine-Manager (public).
 
 ## Environment
 
@@ -43,6 +45,14 @@ for i in $(seq 0 12); do date +%H:%M; adb shell dumpsys meminfo com.jsk.routinem
 
 "Flat" means no steady upward trend after the first 5 minutes. As a rule of thumb, a rise of more than 5 MB between minute 5 and minute 60 fails and needs investigating.
 
+Idle redraw check (proves "redraw once per minute"): leave the app on the dashboard untouched, then
+
+```sh
+adb shell dumpsys gfxinfo com.jsk.routinemanager.debug reset
+sleep 180
+adb shell dumpsys gfxinfo com.jsk.routinemanager.debug | grep "Total frames rendered"   # expect about 3
+```
+
 Battery simulation (always reset afterwards):
 
 ```sh
@@ -60,6 +70,8 @@ adb shell dumpsys battery reset
 
 Report each item as pass or fail with its evidence. A milestone with any skipped item is not done: say what was skipped and why.
 
+Checks that need Android Studio's GUI (Profiler, Layout Inspector) are run by the owner. Ask them, and report their answer as the evidence.
+
 ## Conventions
 
 - Package layout and responsibilities: `docs/ARCHITECTURE.md` §2. Pure logic goes in `domain/` with no Android imports and gets unit tests.
@@ -72,6 +84,7 @@ Report each item as pass or fail with its evidence. A milestone with any skipped
   - Values that change every frame (drag, scroll, animation) are read in `offset { }`, `graphicsLayer { }` or draw lambdas, not during composition.
   - No infinite animations or polling loops.
 - Dependencies: only those in ARCHITECTURE §1. Ask before adding any other.
+- When unsure how a library API works today (Compose, DataStore, lifecycle), check its current docs (context7) before writing the code.
 - Don't change AGP, Gradle, Kotlin, `compileSdk`/`targetSdk` (37) or `minSdk` (31) without asking.
-- At the end of a milestone, update its status and notes in `docs/BUILD_PLAN.md`, then ask the owner before committing as `M<n>: <summary>`.
+- At the end of a milestone, update its status and notes in `docs/BUILD_PLAN.md`, then ask the owner before committing as `M<n>: <summary>` and pushing to `origin main`.
 - Never commit keystores, `keystore.properties` or passwords.

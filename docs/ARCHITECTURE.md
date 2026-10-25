@@ -139,7 +139,7 @@ Recommended phone settings (written up in M12's install guide): Motion smoothnes
 
 - `RmColors` holds every README colour token; `LightColors` and `DarkColors` hold the final values. Provided through a `CompositionLocal`. `MaterialTheme` gets a colour scheme built from the same values, so stock Material components never bring their own colours. No hard-coded colours outside `ui/theme`.
 - **Google Sans Flex** (SIL Open Font License 1.1): download the variable font from Google Fonts. With fonttools in a temporary virtual environment (outside the repo), keep only the weight axis (pin the others to their defaults) and subset to Latin-1 plus the punctuation the UI uses (– “ ” ×; the ✎ in the empty-state text is the `edit` icon, not a character). Ship `res/font/google_sans_flex.ttf` and its `OFL.txt`. Weights 400/500/600/700 via `FontVariation.Settings(FontVariation.weight(n))`. All numbers use `fontFeatureSettings = "tnum"`.
-- **Icons:** the Material Symbols Rounded icons listed in the README, as vector drawables (`res/drawable/ic_<name>.xml`) in the fill/weight variants the README gives. Apache 2.0. No icon font.
+- **Icons:** the Material Symbols Rounded icons listed in the README, as vector drawables (`res/drawable/ic_<name>.xml`) in the fill/weight variants the README gives. Take the SVGs from Google's `material-design-icons` GitHub repo and copy their path data into VectorDrawable XML. Apache 2.0. No icon font.
 
 ## 10. Lists, gestures, timetable
 

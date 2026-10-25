@@ -1,6 +1,8 @@
 # Routine Manager: build plan
 
-Twelve milestones, each sized for one Claude Code session. Order follows SPEC D21: dashboard first, then lists, then settings and sound, then the timetable editor, then the icon and the release.
+Thirteen milestones, each sized for one Claude Code session. Order follows SPEC D21: dashboard first, then lists, then settings and sound, then the timetable editor, then the icon, the release, and finally the user guide.
+
+Checks marked **(owner)** need Android Studio's GUI (Layout Inspector, Profiler). Claude asks the owner to run them and reports the answer.
 
 ## How to run a milestone
 
@@ -26,6 +28,7 @@ Twelve milestones, each sized for one Claude Code session. Order follows SPEC D2
 | M10 Block editor dialog | Not started |
 | M11 App icon | Not started |
 | M12 Release APK and install guide | Not started |
+| M13 User guide (README) and browser demo | Not started |
 
 ## Test times used below
 
@@ -105,7 +108,8 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 
 **Acceptance criteria**
 - [ ] Each row of the test-times table looks the same as the prototype at that fake time (prototype in Chrome next to the phone).
-- [ ] Layout Inspector: the clock panel recomposes once per minute; nothing recomposes between minutes; the right panel doesn't recompose on the minute.
+- [ ] Idle redraw check (CLAUDE.md): over 3 idle minutes the app renders about 3 frames, one per minute.
+- [ ] **(owner)** Layout Inspector: the clock panel recomposes once per minute; the right panel doesn't recompose on the minute.
 - [ ] `./gradlew assembleRelease` builds (unsigned until M12), proving release compiles without the debug screen.
 
 **Install on the phone and verify**
@@ -192,7 +196,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 
 **Acceptance criteria**
 - [ ] Unit tests: max depth = `min(prevDepth + 1, 1)`; no indent for the first item; indenting a parent keeps its children at depth 1; drop depth = `min(originalDepth, prevDepth + 1, 1)`; a parent moves with its children.
-- [ ] Layout Inspector: rows don't recompose on every frame during a drag.
+- [ ] **(owner)** Layout Inspector: rows don't recompose on every frame during a drag.
 
 **Install on the phone and verify**
 - [ ] All three gestures work in a list long enough to scroll, in To-Do and in Self.
@@ -295,5 +299,31 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 
 **Install on the phone and verify**
 - [ ] Release app installs and starts with the sample data.
-- [ ] The debug app is uninstalled if the owner wants.
-- [ ] **24-hour run** per SPEC §5. The owner runs it and reports; the project is done when it passes.
+- [ ] Keep the debug app installed: M13 needs its fake clock for screenshots.
+- [ ] **24-hour run** per SPEC §5. The owner runs it and reports.
+
+---
+
+## M13 User guide (README) and browser demo
+
+**Goal:** a README on GitHub that walks through every feature with screenshots, plus a link to try the prototype in a browser without installing anything.
+
+**Build**
+- `README.md` at the repo root (GitHub shows it on the repo's front page), written for someone who has never seen the app:
+  - What the app is and who it's for.
+  - **Try it in your browser:** link to the prototype (below), with a note that it needs internet (React, Babel and fonts load from CDNs) and has a TEST bar for orientation and time travel that the real app doesn't have.
+  - **Feature walkthrough**, one step per feature, each with an image: dashboard (current block, Free time, Bedtime), list menu and badges, To-Do / Self / Room in view and edit mode, drag to indent and reorder, Grocery in view and edit mode, Settings (theme, tones, volume), weekly timetable and the create gesture, block editor (validation, multi-day groups), portrait layout, night dimming.
+  - **Important details:** the SPEC decisions a user notices: the tone plays only while the app is on screen; the screen stays on; the low-battery cut-off; Bedtime dimming and tap-to-brighten; rotation ignores the rotation lock; no backup, data lives only on the phone.
+  - **How the prototype differs from the app** (SPEC §2 changes, and the TEST bar).
+  - Install: link to `docs/INSTALL.md`.
+- Screenshots: taken on the phone with `adb exec-out screencap -p`, using the debug app's fake clock and the sample data, saved as `docs/screenshots/<nn>-<name>.png`. For gestures a still image can't show (drag, timetable create), use a before/after pair, or a short GIF made from `adb shell screenrecord` with ffmpeg if that is clearer (under 2 MB each).
+- Browser demo: the prototype stays at `design/prototype/` with `support.js` beside it. The owner turns on GitHub Pages (repo Settings → Pages → Deploy from a branch → `main`, folder `/`). The README links to `https://mecha-coder.github.io/Routine-Manager/design/prototype/Routine%20Dashboard.dc.html` and also explains how to download the two files and open the HTML in Chrome.
+
+**Acceptance criteria**
+- [ ] Every user-visible feature in README › Screens and SPEC §2 has a walkthrough step with an image.
+- [ ] Screenshots show only sample data.
+- [ ] Every image and link in README.md works when viewed on github.com.
+
+**Verify on the phone and on GitHub**
+- [ ] Each walkthrough step matches what the release app does on the phone.
+- [ ] The owner opens the README on github.com and runs the browser demo from the Pages link on another device.

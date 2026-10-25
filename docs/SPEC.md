@@ -50,7 +50,8 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D18 | Notch | On the side where the notch is, padding = max(design padding, 34 dp). | Adds |
 | D19 | Clock and language | Always 12-hour (README format), whatever the phone's 24-hour setting. English only. | Confirms |
 | D20 | Project "done" | A 24-hour run on the phone (§5). | Adds |
-| D21 | Build order | Dashboard first, then lists, then settings and sound, then the timetable editor. See [BUILD_PLAN.md](BUILD_PLAN.md). | Plan |
+| D21 | Build order | Dashboard first, then lists, then settings and sound, then the timetable editor, then icon, release and user guide. See [BUILD_PLAN.md](BUILD_PLAN.md). | Plan |
+| D22 | User guide | A root `README.md` walks through every feature with phone screenshots and links to the prototype on GitHub Pages so people can try it in a browser (M13). | Adds |
 
 ## 3. Detailed rules
 
@@ -139,3 +140,4 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
   1. Every README feature, as changed by this file, works on the phone in the signed release app.
   2. The release signing key is stored as described in M12.
   3. A **24-hour run** of the release app, plugged in, on the stand, shows: no crash or ANR; memory flat after warm-up; the tone at every block start; dim + dark at Bedtime and back to normal at the first block; the date changes at midnight.
+  4. The user guide (`README.md`) with screenshots and the browser demo link is on GitHub (M13).
