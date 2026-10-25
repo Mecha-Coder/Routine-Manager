@@ -1,0 +1,77 @@
+# Routine Manager
+
+Personal Android app for one user, sideloaded on a Samsung Galaxy A07. The phone sits on a stand as an always-on dashboard: landscape shows a clock and the current routine block beside four lists (To-Do, Grocery, Self, Room); portrait shows the lists only. Kotlin + Jetpack Compose, local data only, no network.
+
+## Before starting a milestone
+
+1. Read `design/README.md` (the base spec) and everything in `docs/`: `SPEC.md` (decisions that override the README), `ARCHITECTURE.md`, `BUILD_PLAN.md`.
+2. Do only the milestone you were asked for. Read its acceptance criteria before writing code.
+3. Precedence: `docs/SPEC.md` > `design/README.md` > the prototype. If something isn't covered, ask the owner, then record the answer in SPEC.md.
+4. The prototype (`design/prototype/Routine Dashboard.dc.html`, logic in the `<script data-dc-script>` block) is the reference for exact behaviour and maths. Read the relevant function before building that feature; port the behaviour, not the code structure. SPEC §3.8 lists what not to copy.
+
+## Layout
+
+- `design/`: handoff README, prototype, source sounds. Read-only.
+- `docs/`: SPEC, ARCHITECTURE, BUILD_PLAN (and INSTALL from M12).
+- `routine-manager/`: the Android Studio project and Gradle root. Package and release app id `com.jsk.routinemanager`; debug app id `com.jsk.routinemanager.debug`.
+- `temp/`: scratch files and phone screenshots (`temp/screenshot/`). Not part of the app.
+
+## Environment
+
+- `JAVA_HOME` (Android Studio's bundled JDK) and `ANDROID_HOME` are set in `~/.zshrc`. If `java` or `adb` isn't found, VS Code was started before `~/.zshrc` changed: restart VS Code.
+- Run Gradle from `routine-manager/`.
+- The phone connects over Wireless debugging. If `adb devices` is empty: on the phone, Settings → Developer options → Wireless debugging on, same Wi-Fi as the Mac; `adb mdns services` should list it. Samsung turns Wireless debugging off after a Wi-Fi change or a reboot. If it still fails, ask the owner to re-pair from Android Studio's Device Manager.
+
+## Commands
+
+```sh
+cd routine-manager
+./gradlew assembleDebug lintDebug testDebugUnitTest      # build, lint, unit tests
+./gradlew installDebug                                   # install the debug app on the phone
+adb shell am start -n com.jsk.routinemanager.debug/com.jsk.routinemanager.MainActivity
+adb logcat -b crash -d                                   # crashes
+adb logcat -d | grep -E "ANR in com.jsk"                 # ANRs
+adb exec-out screencap -p > ../temp/screenshot/<name>.png
+adb shell run-as com.jsk.routinemanager.debug cat files/datastore/app_data.json
+```
+
+Memory check: 1 hour, sampled every 5 minutes, with the app on screen. Run it in the background:
+
+```sh
+for i in $(seq 0 12); do date +%H:%M; adb shell dumpsys meminfo com.jsk.routinemanager.debug | grep "TOTAL PSS:"; sleep 300; done
+```
+
+"Flat" means no steady upward trend after the first 5 minutes. As a rule of thumb, a rise of more than 5 MB between minute 5 and minute 60 fails and needs investigating.
+
+Battery simulation (always reset afterwards):
+
+```sh
+adb shell dumpsys battery unplug
+adb shell dumpsys battery set level 10
+adb shell dumpsys battery reset
+```
+
+## Quality gate (every milestone)
+
+1. `./gradlew assembleDebug lintDebug testDebugUnitTest` passes. Lint has no errors and no new warnings.
+2. Installed and working on the phone, not the emulator. The milestone's "Install on the phone and verify" steps are done and reported.
+3. No crashes or ANRs during verification (the logcat checks above).
+4. Memory flat over a 1-hour run (the meminfo loop above). The owner confirms with Android Studio's profiler (Memory view).
+
+Report each item as pass or fail with its evidence. A milestone with any skipped item is not done: say what was skipped and why.
+
+## Conventions
+
+- Package layout and responsibilities: `docs/ARCHITECTURE.md` §2. Pure logic goes in `domain/` with no Android imports and gets unit tests.
+- Colours, type and shapes come only from `ui/theme`, using the README token names. No hard-coded colours or font sizes in screens.
+- Each test's name or comment says why the rule matters, not just what it checks.
+- UI text is English and may be written inline; no translations are planned.
+- Efficiency is a hard requirement:
+  - Nothing runs while the app is hidden: no services, alarms, WorkManager, manifest receivers or wake locks.
+  - Only composables that show time read the minute state. One redraw per minute, never per second.
+  - Values that change every frame (drag, scroll, animation) are read in `offset { }`, `graphicsLayer { }` or draw lambdas, not during composition.
+  - No infinite animations or polling loops.
+- Dependencies: only those in ARCHITECTURE §1. Ask before adding any other.
+- Don't change AGP, Gradle, Kotlin, `compileSdk`/`targetSdk` (37) or `minSdk` (31) without asking.
+- At the end of a milestone, update its status and notes in `docs/BUILD_PLAN.md`, then ask the owner before committing as `M<n>: <summary>`.
+- Never commit keystores, `keystore.properties` or passwords.

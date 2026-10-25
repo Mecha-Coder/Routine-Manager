@@ -13,8 +13,8 @@ Project layout (run Claude from the repo root):
 Context:
 - Design handoff: @design/README.md. It is a high-fidelity spec (tokens,
   screens, behaviour, data model). Treat it as the source of truth.
-- Interactive prototype: @design/prototype/Routine Dashboard.dc.html
-  (logic is in the <script data-dc-script> block). Visual and UX reference,
+- Interactive prototype: design/prototype/Routine Dashboard.dc.html
+  (84 KB; logic is in the <script data-dc-script> block). Visual and UX reference,
   not code to port.
 - Sounds: design/assets/sounds/*.wav
 - Stack: native Kotlin + Jetpack Compose, minSdk 31, compileSdk and
