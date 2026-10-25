@@ -19,7 +19,7 @@ case "$tool" in
     cmd=$(jq -r '.tool_input.command // empty' <<<"$input")
     s='(^|[;&|({[:space:]])'   # start of a command word
 
-    has "${s}git[[:space:]]+(commit|push|reset|rebase|merge|cherry-pick|revert|filter-branch|filter-repo|clean|stash|tag|remote|config|update-ref|checkout|switch|restore|branch)([[:space:]]|$)" \
+    has "${s}git([[:space:]]+(-C|-c)[[:space:]]+[^[:space:]]+|[[:space:]]+-[^[:space:]]*)*[[:space:]]+(commit|push|reset|rebase|merge|cherry-pick|revert|filter-branch|filter-repo|clean|stash|tag|remote|config|update-ref|checkout|switch|restore|branch)([[:space:]]|$)" \
       && block "git history, branch, remote and config changes belong to the supervisor"
     has "${s}gh[[:space:]]" && block "GitHub actions belong to the supervisor"
 
