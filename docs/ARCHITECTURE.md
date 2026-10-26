@@ -166,5 +166,5 @@ Recommended phone settings (written up in M12's install guide): Motion smoothnes
 | Samsung Keyboard doesn't report Backspace on an empty field | Try a key-event check on the field; if unreliable, the ✕ button is the delete path (SPEC §3.7). Record the result in M6. |
 | Left panel needs ~380 dp of the 384 dp height | Body area takes the remaining height (SPEC §3.4); screenshot check in M3 |
 | Rotating with the keyboard open, or with a drag in progress | Test both on the phone in M6 and M7 |
-| Memory creeping up over hours (unreleased MediaPlayer, flows collected twice) | Release players after each play; collect flows with the lifecycle; 30-minute memory check at M2, M4, M7, M8 and M12; 24-hour run at M12 |
+| Memory creeping up over hours (unreleased MediaPlayer, flows collected twice) | Release players after each play; collect flows with the lifecycle; 30-minute memory check at M2, M4, M7, M8 and M12; one overnight run of the release app at the end (SPEC D20) |
 | Wireless debugging drops (Samsung turns it off on Wi-Fi change or reboot) | Reconnect steps in CLAUDE.md |

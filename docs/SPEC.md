@@ -50,7 +50,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D17 | Design canvas | The prototype's screen is **880 × 396 dp**. The README's 900 × 416 includes the prototype's 10 dp phone frame. The phone is 27 dp narrower and 12 dp shorter than the design. | Corrects |
 | D18 | Notch | On the side where the notch is, padding = max(design padding, 34 dp). | Adds |
 | D19 | Clock and language | Always 12-hour (README format), whatever the phone's 24-hour setting. English only. | Confirms |
-| D20 | Project "done" | A 24-hour run on the phone (§5). | Adds |
+| D20 | Project "done" | **One night** of normal use of the release app on the phone (§5), instead of the planned 24-hour run (owner decision, 26 Oct 2026). Memory was already flat in five 30-minute runs and in about 2 hours on the release app; what had never run in real time on the release app was the overnight sequence. | Adds |
 | D21 | Build order | M1, M2, then M3 (dashboard) with M11 (icon) beside it. After M3, two tracks run in parallel, each in its own git worktree: lists (M5 → M6 → M7) and power, settings and timetable (M4, M8 → M9 → M10). Builders take turns on the phone; the supervisor merges each milestone onto `main` after its gate and the owner's OK. Then M12 (release) and M13 (user guide). See [BUILD_PLAN.md](BUILD_PLAN.md). (Parallel tracks: owner, M2.) | Plan |
 | D22 | User guide | A root `README.md` walks through every feature with phone screenshots and links to the prototype on GitHub Pages so people can try it in a browser (M13). It lives on GitHub only; the app gets no help screen. | Adds |
 | D23 | Kotlin version | Kotlin **2.4.21**, up from the wizard's 2.2.10, so the serialization plugin and `kotlinx-serialization-json` can be current. The Compose compiler and serialization plugins use the same version. (Owner, M1.) | Adds |
@@ -146,5 +146,5 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 - **The project** is done when all of these hold:
   1. Every README feature, as changed by this file, works on the phone in the signed release app.
   2. The release signing key is stored as described in M12.
-  3. A **24-hour run** of the release app, plugged in, on the stand, shows: no crash or ANR; memory flat after warm-up; the tone at every block start; dim + dark at Bedtime and back to normal at the first block; the date changes at midnight.
+  3. **One night** of the release app, plugged in, on the stand, from the afternoon until after the next morning's first block, shows: no crash or ANR; memory flat after warm-up; the tone at every block start; dim + dark at Bedtime and back to normal at the first block; the date changes at midnight. (Owner decision, 26 Oct 2026, replacing the planned 24-hour run; see D20.)
   4. The user guide (`README.md`) with screenshots and the browser demo link is on GitHub (M13).

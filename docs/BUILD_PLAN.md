@@ -28,7 +28,7 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 | M9 Weekly timetable | Done |
 | M10 Block editor dialog | Done |
 | M11 App icon | Done |
-| M12 Release APK and install guide | Done (24-hour run pending, owner) |
+| M12 Release APK and install guide | Done (overnight run pending, see "Closing the project" in M12) |
 | M13 User guide (README) and browser demo | Done |
 
 ## Test times used below
@@ -785,14 +785,26 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - `docs/INSTALL.md`: how to build and install (`adb install`), how to update later (`adb install -r`, never uninstall: that deletes all data), how to back up the keystore and its passwords in two separate places and why (SPEC §3.5), and the recommended phone settings (Motion smoothness Standard, Protect battery on; Auto Blocker off only if an install is blocked).
 
 **Acceptance criteria**
-- [ ] Quality gate passes for the release build too (`lintRelease`).
+- [x] Quality gate passes for the release build too (`lintRelease`). (Gate, 26 Oct, in the notes below.)
 - [x] Release memory baseline recorded in the notes.
 - [x] The owner confirms the keystore is backed up. (Owner's decision: an encrypted zip in the public repo, SPEC §3.5.)
 
 **Install on the phone and verify**
 - [x] Release app installs and starts with the sample data.
 - [x] Keep the debug app installed: M13 needs its fake clock for screenshots.
-- [ ] **24-hour run** per SPEC §5. The owner runs it and reports.
+- [ ] **Overnight run** per SPEC §5 (replaces the 24-hour run, owner decision D20). Started Mon 26 Oct 16:36; read the results after Tue 27 Oct 06:00.
+
+**Partial runs so far**
+- Mon 26 Oct 12:29–14:23 (stopped by a Mac restart): PSS 39,281 → 41,077 → 41,914 KB, 0 crashes, 0 ANRs, tones at the 12:00 and 13:00 block starts. The phone was unplugged (53 %). Log: `temp/orchestration/run24-partial-26oct/`.
+- Overnight run started Mon 26 Oct 16:36: first sample PSS 43,278 KB, 0 crashes, 0 ANRs. Phone plugged in from 16:38.
+
+**Closing the project** (after the first morning block, Tue 27 Oct 06:00)
+1. Read `temp/orchestration/run24/samples.log` and `tones.raw` and the `midnight-*.png` screenshots. Pass = every SPEC §5 item 3 check: no crash or ANR; PSS flat after warm-up; one tone per block start between 16:36 and 06:00 while the app was in front (sample routine: Mon 17:30, 18:30, 20:00, 22:30 and Tue 06:00; if the owner has changed the routine, use its block starts); `mBrightnessReason` shows the override during Bedtime (sample routine: 23:00 to 06:00) and back to normal after 06:00; the date on the midnight screenshots changes to Tue 27 Oct.
+2. Record the evidence here, tick the box above, set M12 to Done in the status table. On a failure, report it to the owner instead.
+3. Stop the monitor (`run24.sh`) and the Mac keep-awake (`caffeinate -i -t 86400`); both also end by themselves around 16:36.
+4. Delete `.claude/handoff.md` (its facts are in CLAUDE.md › After release).
+5. Commit and push ("Close project: …").
+6. Tell the owner they may uninstall **Routine Manager (debug)** from the phone, checking the "(debug)" in the name. **Never** uninstall **Routine Manager**.
 
 **Notes**
 - **Signing (`app/build.gradle.kts`):** `signingConfigs.release` reads `routine-manager/keystore.properties` (`storeFile` as an absolute path, `storePassword`, `keyAlias`, `keyPassword`) and the release build type uses it. Without the file, `validateSigningRelease` stops a release build with `Release signing isn't set up: <path>/keystore.properties is missing. See docs/INSTALL.md, step 1.` (AGP's own message was `Keystore file not set for signing config release`). Debug builds, unit tests and `lintRelease` don't need the file, so a worktree without it still builds debug; `assembleRelease` there now fails instead of making an unsigned APK. The configuration cache stays on: the same message comes from a reused cache entry.

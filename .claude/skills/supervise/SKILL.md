@@ -84,5 +84,5 @@ Last event: <one line>
 - **M1:** uninstalling the wizard's starter app (`com.jsk.routinemanager`, no data yet) needs the owner's OK. You run it; the builder can't.
 - **M4:** the owner tunes `BEDTIME_BRIGHTNESS` in a dark room; relay the values.
 - **M11:** the builder saves 2–3 icon concepts as PNGs in `temp/`; give the owner the paths and ask which one.
-- **M12:** the owner creates the keystore in their own terminal, with a command the builder writes. Passwords never go into the chat or any file Claude reads. The 24-hour run is the owner's; ask them to report the results.
+- **M12:** the owner creates the keystore in their own terminal, with a command the builder writes. Passwords never go into the chat or any file Claude reads. The project's final check is one overnight run of the release app (SPEC D20); follow "Closing the project" in BUILD_PLAN M12.
 - **M13:** GitHub only, no app code. The owner turns on GitHub Pages (repo Settings → Pages → Deploy from a branch → `main`, `/`).

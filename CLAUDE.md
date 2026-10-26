@@ -6,6 +6,21 @@ Personal Android app for one user, sideloaded on a Samsung Galaxy A07. The phone
 
 Milestones normally run through the supervisor: the owner types `/supervise` (runbook: `.claude/skills/supervise/SKILL.md`). The supervisor briefs one `milestone-builder` subagent per milestone (rules: `.claude/agents/milestone-builder.md`). A guard script (`.claude/hooks/builder-guard.sh`) blocks builders from committing, pushing, uninstalling, changing phone settings and editing the decision docs. Builders can't talk to the owner; they report to the supervisor, which relays. The supervisor's state lives in `temp/orchestration/log.md`.
 
+## After release (read before changing the app later)
+
+All milestones M1–M13 are built. The phone now holds the owner's **real data** in the release app, and there is no backup (SPEC D14).
+
+- **Release app `com.jsk.routinemanager`: never uninstall it** (not with adb, not on the phone) and never clear its data. Uninstalling deletes everything.
+- **Test changes on the debug app first** (`com.jsk.routinemanager.debug`, separate data). If the owner has removed it, `./gradlew installDebug` brings it back.
+- **Update the release app** only by installing over it: `./gradlew assembleRelease`, then `adb install -r app/build/outputs/apk/release/app-release.apk` (from `routine-manager/`). Full steps and the `INSTALL_FAILED_UPDATE_INCOMPATIBLE` case: `docs/INSTALL.md` §5.
+- **Signing key:** `routine-manager-release.jks` in the project folder (git-ignored). Its password is in `routine-manager/keystore.properties` (git-ignored): **never print, cat or paste it.** Without that file, `assembleRelease` stops on purpose. Backup: SPEC §3.5 and `docs/INSTALL.md` §2.
+- **Bring the app back to the front:** `adb shell am start -n com.jsk.routinemanager/com.jsk.routinemanager.MainActivity`. An app locker on the phone (`com.gamemalt.applocker`) sometimes takes the focus.
+- **Lessons from the build** (details in the BUILD_PLAN notes):
+  - R8's `packageScope` crashed the release app at start (M12); don't add it back.
+  - A round launcher icon is not possible on this phone: the launcher forces its rounded square (M11, D24).
+  - Parallel builders: create worktrees with `git worktree add -b <branch> .claude/worktrees/<name> main`. The Agent tool's worktree isolation deletes the worktree after a hand-back with no tracked changes.
+  - The builder guard also blocks some harmless commands: `rm -rf` anywhere, `which keytool`, `git remote -v`, and commands that mention `design/` together with `tee`, `mv` or `rm`.
+
 ## Before starting a milestone
 
 1. Read `design/README.md` (the base spec) and everything in `docs/`: `SPEC.md` (decisions that override the README), `ARCHITECTURE.md`, `BUILD_PLAN.md`.
@@ -46,7 +61,7 @@ adb exec-out screencap -p > ../temp/screenshot/<name>.png
 adb shell run-as com.jsk.routinemanager.debug cat files/datastore/app_data.json
 ```
 
-Memory check: **only at M2, M4, M7, M8 and M12** (owner decision, M2; M12 also has the 24-hour run). 30 minutes, sampled every 5 minutes, with the app on screen. Run it in the background (if the phone is listed twice, add `-s <serial without (2)>` to `adb`):
+Memory check: **only at M2, M4, M7, M8 and M12** (owner decision, M2; the project ends with one overnight run of the release app, SPEC D20). 30 minutes, sampled every 5 minutes, with the app on screen. Run it in the background (if the phone is listed twice, add `-s <serial without (2)>` to `adb`):
 
 ```sh
 for i in $(seq 0 6); do date +%H:%M; adb shell dumpsys meminfo com.jsk.routinemanager.debug | grep "TOTAL PSS:"; sleep 300; done
