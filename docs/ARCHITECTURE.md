@@ -151,7 +151,7 @@ Recommended phone settings (written up in M12's install guide): Motion smoothnes
 ## 11. Build variants and signing
 
 - `debug`: `applicationIdSuffix = ".debug"`, app name "Routine Manager (debug)", includes `src/debug` (debug screen, fake clock).
-- `release`: R8 on (already configured), signed with a keystore stored outside the repo. Path and passwords come from `routine-manager/keystore.properties`, which is gitignored. Set up in M12.
+- `release`: R8 on (`optimization { enable = true }`; the wizard's experimental `packageScope` was removed in M12 because it made R8 produce an `IllegalAccessError` at start), signed with the key `routine-manager-release.jks` in the project folder (ignored by `.gitignore` and `.git/info/exclude`, never committed as a plain file; SPEC §3.5). Path and passwords come from `routine-manager/keystore.properties`, which is gitignored. Set up in M12; see docs/INSTALL.md.
 
 ## 12. Testing
 

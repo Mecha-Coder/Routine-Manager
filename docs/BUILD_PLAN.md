@@ -786,13 +786,32 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 
 **Acceptance criteria**
 - [ ] Quality gate passes for the release build too (`lintRelease`).
-- [ ] Release memory baseline recorded in the notes.
-- [ ] The owner confirms the keystore is backed up.
+- [x] Release memory baseline recorded in the notes.
+- [x] The owner confirms the keystore is backed up. (Owner's decision: an encrypted zip in the public repo, SPEC §3.5.)
 
 **Install on the phone and verify**
-- [ ] Release app installs and starts with the sample data.
-- [ ] Keep the debug app installed: M13 needs its fake clock for screenshots.
+- [x] Release app installs and starts with the sample data.
+- [x] Keep the debug app installed: M13 needs its fake clock for screenshots.
 - [ ] **24-hour run** per SPEC §5. The owner runs it and reports.
+
+**Notes**
+- **Signing (`app/build.gradle.kts`):** `signingConfigs.release` reads `routine-manager/keystore.properties` (`storeFile` as an absolute path, `storePassword`, `keyAlias`, `keyPassword`) and the release build type uses it. Without the file, `validateSigningRelease` stops a release build with `Release signing isn't set up: <path>/keystore.properties is missing. See docs/INSTALL.md, step 1.` (AGP's own message was `Keystore file not set for signing config release`). Debug builds, unit tests and `lintRelease` don't need the file, so a worktree without it still builds debug; `assembleRelease` there now fails instead of making an unsigned APK. The configuration cache stays on: the same message comes from a reused cache entry.
+- **Root `.gitignore`:** `keystore.properties`, `*.jks`, `*.keystore`.
+- **Key (made by the owner; builders can't run keytool):** `routine-manager-release.jks` in the project folder (the main checkout's root), alias `routine-manager`, PKCS12. It is ignored by the root `.gitignore` (`*.jks`) and, on the owner's Mac, by `.git/info/exclude`. PKCS12 has one password, so `keyPassword` = `storePassword`. `docs/INSTALL.md` step 1b writes `keystore.properties` with a one-line hidden `read` (bash `read -rsp`; the owner's Terminal runs bash), so the password never shows on screen or in shell history; letters and digits only, because a backslash is an escape in a properties file. Builders never print that file; Gradle reads it.
+- **Backup (owner's decision, SPEC §3.5):** a password-protected zip of the key, `routine-manager-backup.zip`, committed to the public repo (59df734). The supervisor warned that zip encryption is weak and the repo public; the owner kept it. `docs/INSTALL.md` describes it and still advises a private copy.
+- `versionCode 1` / `versionName "1.0"` were already set by the project wizard.
+- **R8 `packageScope` removed (the release app crashed at start).** No release APK had been run before M12 (M2–M11 only built one). The first start died in `RoutineApp.onCreate`: `IllegalAccessError: Class kotlin.sequences.d extended by class z31 is inaccessible`, from `MainDispatcherLoader`'s static init. The mapping shows why: R8 moved `kotlin.sequences.SequencesKt___SequencesJvmKt` to the default package (`z31`) but left its package-private superclass `SequencesKt__SequenceBuilderKt` in `kotlin.sequences` (`kotlin.sequences.d`). The wizard's `packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")` is experimental in AGP 9 (Android docs, "Optimize specified packages with packageScope"). With plain `optimization { enable = true }`, R8 optimizes the whole app and the app runs; the APK went from 3,630,538 to 2,580,733 bytes. App classes are now renamed too; kotlinx.serialization uses the generated `AppData.serializer()` (no reflection), and nothing looks resources up by name.
+- **No debug-screen code in the release APK:** its dex has none of `FakeAppClock`, `DebugScreen`, `DebugEntry`, "Reset data to sample" or "Fake clock" (`strings`: release 0 hits, debug 89), and the R8 mapping lists 65 app classes, none in `com.jsk.routinemanager.debug` (the release `DebugEntry` stub is inlined).
+- **Signed release APK:** `apksigner verify`: v2 scheme, one signer, `CN=Routine Manager`, RSA 4096, certificate SHA-256 `74c4a676…66aa9f`. `aapt2`: `com.jsk.routinemanager`, versionCode 1, versionName 1.0, label "Routine Manager", not debuggable.
+- **Build:** clean `assembleDebug lintDebug testDebugUnitTest assembleRelease lintRelease` passes (164 tests, 0 failures, 0 skipped; lint debug and release each 0 errors, the 2 accepted M1 warnings). `keystore.properties` shows as ignored (`git status --ignored`: `!! routine-manager/keystore.properties`).
+- **Phone, 26 Oct (release app, real clock, phone unplugged at 57 %, landscape):**
+  - `adb install` next to the debug app; both `com.jsk.routinemanager` and `com.jsk.routinemanager.debug` stay installed. The fixed build went on with `adb install -r` (same key), cold start 596 ms.
+  - First start: sample data, Mon 11:37 AM, Work Session1 with LEFT 23min, NEXT Lunch, To-Do badge 4, Grocery badge 1 (`temp/screenshot/m12-release-first-start.png`). Force-stop and relaunch: same screen, no `RoutineApp` error in logcat (the saved file decoded).
+  - A tour that saved nothing: To-Do view and edit mode (`m12-release-todo-edit.png`), Grocery, Settings, Weekly timetable, the editor on Mon Lunch (`m12-release-editor.png`), closed with ✕. A 1.2 s long press on the gear opened Settings, not a debug screen.
+  - **Release memory baseline** (dashboard, untouched, 11:39–11:49): TOTAL PSS 56,781 KB at start, then 54,051 / 53,803 / 53,917 / 53,901 / 53,448 KB every 2 minutes. That is about 40 MB below the debug app (92–101 MB in M1–M4).
+  - Idle redraw, 11:39:26–11:42:27: 3 framestats frames ("Total frames rendered" 6, M2 note).
+  - Crashes: only the 11:35:13 start crash of the `packageScope` build above; none since the fix. No ANRs. Before the first install I cleared the phone's crash buffer (`logcat -b crash -c`), so earlier crashes are no longer in it. Battery simulation was not used.
+  - Left with the release app on the dashboard.
 
 ---
 

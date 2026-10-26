@@ -3,3 +3,8 @@
 temp/screenshot/
 temp/orchestration/
 .claude/worktrees/
+
+# Release signing key and its passwords: never commit (docs/INSTALL.md)
+keystore.properties
+*.jks
+*.keystore

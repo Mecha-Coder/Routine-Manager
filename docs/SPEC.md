@@ -106,6 +106,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 - Not saved: open list, edit mode, fake clock. Orientation is not saved (it follows the sensor).
 - If the saved file cannot be read, a copy of it is kept next to it (`app_data.corrupt-<time>.json`) and the app starts from sample data.
 - **No backup (D14).** Uninstalling the release app deletes all data. Losing the release signing key means an update needs an uninstall, which also deletes all data. M12 covers storing the key safely.
+- **Signing key (owner, M12):** the key is `routine-manager-release.jks` in the project folder (ignored through `.git/info/exclude`, never committed as a plain file). The owner's backup is a password-protected zip of the key, `routine-manager-backup.zip`, committed to the public repo (59df734). The supervisor warned that `zip -e` encryption is weak and the repo is public; the owner chose to keep it. Claude still never commits keystores, `keystore.properties` or passwords.
 
 ### 3.6 Debug screen (D12)
 
