@@ -378,14 +378,83 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - Indent mode (140 ms snap), reorder mode (280 ms hold, 12 ms haptic, ghost card with "+N sub-tasks", rows slide apart 200 ms, 170 ms drop), vertical-first cancel so the list scrolls.
 
 **Acceptance criteria**
-- [ ] Unit tests: max depth = `min(prevDepth + 1, 1)`; no indent for the first item; indenting a parent keeps its children at depth 1; drop depth = `min(originalDepth, prevDepth + 1, 1)`; a parent moves with its children.
-- [ ] Code check: drag positions are read only in `offset { }`, `graphicsLayer { }` or draw lambdas, so rows don't recompose on every frame during a drag. (Replaces a Layout Inspector check; owner decision, M3.)
+- [x] Unit tests: max depth = `min(prevDepth + 1, 1)`; no indent for the first item; indenting a parent keeps its children at depth 1; drop depth = `min(originalDepth, prevDepth + 1, 1)`; a parent moves with its children.
+- [x] Code check: drag positions are read only in `offset { }`, `graphicsLayer { }` or draw lambdas, so rows don't recompose on every frame during a drag. (Replaces a Layout Inspector check; owner decision, M3.) Also measured with a temporary probe build, see notes.
 
 **Install on the phone and verify**
-- [ ] All three gestures work in a list long enough to scroll, in To-Do and in Self.
-- [ ] A vertical swipe that starts on a handle scrolls the list.
-- [ ] Order and depth survive a force-stop.
-- [ ] 30-minute memory check.
+- [x] All three gestures work in a list long enough to scroll, in To-Do and in Self.
+- [x] A vertical swipe that starts on a handle scrolls the list.
+- [x] Order and depth survive a force-stop.
+- [ ] 30-minute memory check. (Supervisor.)
+
+**Notes**
+- **Unit tests:** 127 (20 new): `DragMathTest` 14, `OutlineOpsTest` +6. Lint: 0 errors, the 2 accepted M1 warnings. `assembleRelease` builds.
+- **Where things are:**
+  - `domain/DragMath`: `decide` (sideways more than 8 dp and more sideways than vertical → indent; vertical more than 8 dp first → scroll; else wait), `maxIndentDepth`, `indentOffset` (0.25× rubber band), `indentDepth` (snap to the nearest 24 dp level), `dropIndex`, `dropDepth`, `gapTop`, `shift`. Constants `HOLD_MILLIS` 280, `DECIDE_DP` 8, `LEVEL_DP` 24. All ported from the prototype's `dDown` / `dMove` / `dCalc` / `dGapTop` / `dUp`.
+  - `domain/OutlineOps`: `setDepth` (the indent commit: only the item changes, then normalise) and `moveSubtree` (the item and its children move together; the children shift by the same depth delta).
+  - `ui/lists/OutlineDrag.kt`:
+    - `OutlineDragState`: the session, remembered in `ListDetail`. It is not a ViewModel: it holds layout coordinates and animations, and rotation keeps the composition (`configChanges`). Settles the M6 note.
+    - `DragHandle`, `Modifier.outlineDragRow`, `OutlineDragGhost`.
+  - `ListDetail` is now a Box: the list column, and the ghost over the whole panel, as in the prototype (its ghost lives in the pane, so it can pass over the header).
+  - `MainViewModel.setOutlineDepth` / `moveOutlineItem`.
+  - Theme: `RmElevation.dragGhost` and `RmType.dragGhostCount` (12 / 400).
+- **Behaviour as in the prototype:**
+  - Touching a handle clears the focus (the prototype's `blur()`), so the keyboard closes.
+  - A tap on a handle does nothing.
+  - Indent: only the dragged row moves; the release snaps in 140 ms (CSS `ease`); then only that item's depth changes.
+  - Reorder:
+    - 12 ms vibration at pick-up.
+    - Ghost: 42 dp, `bg`, 1 dp `divider` border, radius 14, 1.03 scale with the drag shadow; it covers the row from the bled left edge to the bled right edge.
+    - The item and its children are hidden; the other rows slide 200 ms with `cubic-bezier(.2,.7,.3,1)`.
+    - The release animates the ghost 170 ms into the gap (and sideways to the new depth), with the scale and shadow going back to none.
+    - Dropping back at the same place saves nothing.
+  - A cancelled gesture counts as a release (the prototype's `pointercancel` = `dUp`).
+  - Only deviation: the ghost of an item with no text shows the list's placeholder ("New item" in Self and Room); the prototype always says "New task".
+- **No auto-scroll while reordering** (owner, M7: as in the prototype). Moving an item beyond the visible rows takes two drags with a scroll between. A possible follow-up if the owner finds that tedious: scroll while the ghost is near the list's top or bottom edge.
+- **Positions:**
+  - Everything is measured in the panel. The rows' positions come from `onPlaced` placed before each row's `graphicsLayer`, so they never include the drag's own offsets, and they are measured live on every move, not captured once as the prototype does. A layout change during the drag (keyboard closing, rotation) is followed.
+  - Finger positions are converted from the handle with `localPositionOf`, so they stay right while the handle's row is translated (indent).
+- **No flicker on commit:** the edit list shows the drag's result (`OutlineDragState.shown`) until the saved data comes back with it. The offsets are cleared in the same frame as the new order shows. A screen recording of a drop shows the ghost in the gap in one frame and the new order in place in the next.
+- **Code check:**
+  - Read every frame:
+    - the indent offset, the slides and the hidden rows: in each row's `graphicsLayer { }`;
+    - the ghost's x / y: in `offset { }`;
+    - its scale: in `graphicsLayer { }`;
+    - its shadow: in the `dropShadow { }` block (draw phase);
+    - its width: in a `layout { }` lambda.
+  - Read in composition: only the session's start and end (the ghost appears and goes) and the committed result.
+  - **Probe build** (temporary `Log.d` in the list body, the row body and the ghost, plus the measured tops on each move; removed, and the clean build reinstalled):
+    - Reorder with 41 move events: the ghost composed once at pick-up; 0 list or row recompositions during the moves. At the commit, the list once plus the 4 rows whose number changed; the other 5 skipped.
+    - The measured tops stayed the same on all 41 moves while rows slid.
+    - Indent over 0.8 s: 0 recompositions during the swipe; at the commit, the list once plus the 6 rows whose numbers changed.
+- **Haptic:**
+  - `VibrationEffect.createOneShot(12, DEFAULT_AMPLITUDE)`, which needs `android.permission.VIBRATE` (install-time, no prompt). M9 adds the same permission and its own helper; the supervisor merges them.
+  - `dumpsys vibrator_manager` showed `Step=12ms`, usage TOUCH, scale LOW (0.71: the phone's touch-vibration intensity).
+- **Shadow:** `0 12 30 rgba(0,0,0,.18)` is `Shadow(radius = 15.dp, offset 12 dp, alpha .18)`. Compose passes the radius straight to Android's `BlurMaskFilter` (sigma 0.577 × radius + 0.5, checked in the ui-graphics 1.12.1 bytecode); Chrome blurs a CSS box shadow with sigma 0.289 × blur + 0.5.
+- **Rotation during a drag** (the supervisor rotated over adb while an injected pointer was held down):
+  - Android does not cancel the touch: the drag goes on in the new orientation.
+  - Portrait → landscape: positions were followed, and the drop after a move landed correctly. The first build kept the ghost's portrait width (720 px, past the screen edge) until release. Now the ghost takes the dragged row's current width when it is measured; the list is measured first.
+  - Checked landscape → portrait: the ghost was re-sized to the portrait row (`m7-rotate2-after.png`).
+- **Phone, 26 Oct (debug build; landscape, notch on the right, unless noted):**
+  - **Setup:** debug fake clock Mon 09:05 paused, app volume 0 (the tones that played were silent). To-Do with 4 extra items (9 rows, scrolls) and Self with 4 extra (7 rows, scrolls). Gestures sent with `input swipe`, `input draganddrop` and `input motionevent DOWN/MOVE/UP`; recorded with `screenrecord` and read frame by frame.
+  - **Vertical swipe on a handle:** scrolls the list both ways in To-Do and in Self; `app_data.json` unchanged.
+  - **Indent:**
+    - "Sabah" (a parent) → 1.1); its children stay at depth 1 (1.2, 1.3).
+    - Outdent back: it re-adopts them.
+    - The first item only rubber-bands and stays at depth 0.
+    - Frames show the whole row following the finger, then moving at a quarter rate past the range: −68 px measured against −67.75 expected.
+  - **Reorder:**
+    - Sabah with its 2 children below "Find future room": the ghost reads "2) Sabah +2 sub-tasks", and "Find" slides up 3 rows (`m7-reorder-parent-held.png`). Measured in frames: slide about 200 ms, drop about 170 ms.
+    - A child dragged to the top becomes a parent.
+    - A parent dropped between another parent and its child stays a parent and adopts the child (as in the prototype).
+    - With the list scrolled to the bottom, reorder and indent both land correctly.
+    - In Self, the ghost reads "+2 sub-items".
+    - Portrait drag works too (full-width ghost).
+    - Dark palette (real Bedtime): ghost in `bg` black with the `divider` border (`m7-dark-held.png`).
+    - Prototype reference: `m7-proto-lifted.png`, `m7-proto-moved.png`.
+  - **Force-stop and relaunch:** To-Do and Self order and depths kept, in `app_data.json` and on screen.
+  - **End state:** debug Reset (sample data; light, Soft chime, 60 %), fake clock Live, list menu shown. No crashes or ANRs (crash buffer, logcat, dropbox).
+- **Phone facts:** adb dropped once during an install ("device offline", no mDNS service); the owner re-enabled Wireless debugging. Afterwards the phone was listed only as `adb-R8YY710D4SN-23fgJR (2)._adb-tls-connect._tcp`.
 
 ---
 

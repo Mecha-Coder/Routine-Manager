@@ -120,4 +120,46 @@ class OutlineOpsTest {
         assertEquals("New text", result[2].text)
         assertEquals(outline.filterIndexed { i, _ -> i != 2 }, result.filterIndexed { i, _ -> i != 2 })
     }
+
+    // Drag (M7). outline = p1, c1 (child), c2 (child), p2.
+
+    @Test
+    fun indentingAParentKeepsItsChildrenAtDepthOneUnderTheItemAbove() {
+        // README: "Indenting a parent makes it a child of the item above; its former children stay at depth 1."
+        val list = listOf(item("a"), item("p"), item("c1", 1), item("c2", 1))
+        assertEquals(listOf("a" to 0, "p" to 1, "c1" to 1, "c2" to 1), OutlineOps.setDepth(list, "p", 1).shape())
+    }
+
+    @Test
+    fun outdentingAChildMakesItTheParentOfTheChildrenAfterIt() {
+        // Only the dragged item changes depth; the siblings below it keep theirs, so they now hang under it.
+        assertEquals(listOf("p1" to 0, "c1" to 0, "c2" to 1, "p2" to 0), OutlineOps.setDepth(outline, "c1", 0).shape())
+    }
+
+    @Test
+    fun movingAParentTakesItsChildrenWithIt() {
+        // p1 with c1, c2 dropped after p2 (index 1 in the list without them): the subtree stays together.
+        val result = OutlineOps.moveSubtree(outline, "p1", 1, 0)
+        assertEquals(listOf("p2" to 0, "p1" to 0, "c1" to 1, "c2" to 1), result.shape())
+    }
+
+    @Test
+    fun movingAChildToTheTopMakesItAParent() {
+        assertEquals(listOf("c2" to 0, "p1" to 0, "c1" to 1, "p2" to 0), OutlineOps.moveSubtree(outline, "c2", 0, 0).shape())
+    }
+
+    @Test
+    fun movingKeepsTextAndDoneOfEveryMovedItem() {
+        // A drag only reorders: ticks and text travel with the items.
+        val list = listOf(item("a"), item("p", done = true), item("c", 1, text = "child", done = true))
+        val result = OutlineOps.moveSubtree(list, "p", 0, 0)
+        assertEquals(listOf(item("p", done = true), item("c", 1, text = "child", done = true), item("a")), result)
+    }
+
+    @Test
+    fun droppingAParentBetweenAnotherParentAndItsChildrenAdoptsThoseChildren() {
+        // As in the prototype: p2 lands right after p1, so p1's children now follow p2 and belong to it.
+        val list = listOf(item("p1"), item("c1", 1), item("p2"))
+        assertEquals(listOf("p1" to 0, "p2" to 0, "c1" to 1), OutlineOps.moveSubtree(list, "p2", 1, 0).shape())
+    }
 }

@@ -196,6 +196,13 @@ class MainViewModel(
 
     fun deleteOutlineItem(list: ListKey, id: String) = updateOutline(list) { OutlineOps.delete(it, id) }
 
+    /** An indent drag released at [depth]. */
+    fun setOutlineDepth(list: ListKey, id: String, depth: Int) = updateOutline(list) { OutlineOps.setDepth(it, id, depth) }
+
+    /** A reorder dropped at [index] in the list without the item and its children. */
+    fun moveOutlineItem(list: ListKey, id: String, index: Int, depth: Int) =
+        updateOutline(list) { OutlineOps.moveSubtree(it, id, index, depth) }
+
     private fun updateGrocery(transform: (List<GroceryCategory>) -> List<GroceryCategory>) =
         repository.update { it.copy(grocery = transform(it.grocery)) }
 

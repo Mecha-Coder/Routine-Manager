@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.only
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.jsk.routinemanager.R
@@ -35,7 +37,7 @@ import com.jsk.routinemanager.ui.theme.RmType
 /**
  * One list in the list panel (README › Screens › 3): header with back, the list's name and Edit
  * (or Done in edit mode), then the list, scrolling. The scrolling part ends above the keyboard,
- * so the focused field can stay in view.
+ * so the focused field can stay in view. A reorder's ghost is drawn over the whole panel.
  *
  * @param data null until the saved data is loaded; only the header shows until then.
  * @param notchSides the panel edges that touch the screen edge, where the notch may be (SPEC D18).
@@ -50,7 +52,25 @@ fun ListDetail(
     modifier: Modifier = Modifier,
 ) {
     val notch = WindowInsets.displayCutout.only(notchSides)
-    Column(modifier) {
+    val drag = rememberOutlineDragState()
+    Box(modifier.onPlaced { drag.pane = it }) {
+        ListColumn(list, data, editing, viewModel, notch, drag)
+        // Over the whole panel, as in the prototype: the ghost can pass over the header.
+        OutlineDragGhost(drag)
+    }
+}
+
+/** The header and the scrolling list. */
+@Composable
+private fun ListColumn(
+    list: ListKey,
+    data: AppData?,
+    editing: Boolean,
+    viewModel: MainViewModel,
+    notch: WindowInsets,
+    drag: OutlineDragState,
+) {
+    Column(Modifier.fillMaxSize()) {
         Header(
             list.label,
             editing,
@@ -99,10 +119,14 @@ fun ListDetail(
                             items,
                             placeholder = if (todo) "New task" else "New item",
                             addLabel = if (todo) "Add task" else "Add item",
+                            childNoun = if (todo) "sub-task" else "sub-item",
                             onTextChange = { id, text -> viewModel.editOutlineText(list, id, text) },
                             onInsertAfter = { id -> viewModel.insertOutlineItemAfter(list, id) },
                             onAppend = { viewModel.appendOutlineItem(list) },
                             onDelete = { id -> viewModel.deleteOutlineItem(list, id) },
+                            onIndent = { id, depth -> viewModel.setOutlineDepth(list, id, depth) },
+                            onMove = { id, index, depth -> viewModel.moveOutlineItem(list, id, index, depth) },
+                            drag = drag,
                         )
                     } else {
                         // Only To-Do items can be ticked; tapping a Self or Room item does nothing.

@@ -1,19 +1,17 @@
 package com.jsk.routinemanager.ui.lists
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -21,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -105,31 +102,42 @@ private fun Number(number: String, depth: Int) {
 /**
  * A To-Do, Self or Room list in edit mode (README › Edit mode): each row has the drag handle,
  * number, a text field and ✕; "+ Add task" (To-Do) or "+ Add item" (Self, Room) appends an item.
- * The handle does nothing until M7.
+ * The handle indents and reorders ([OutlineDragState]).
  *
  * The functions that add an item return its id, so its field can take the focus.
+ *
+ * @param childNoun "sub-task" or "sub-item", for the drag ghost's "+2 sub-tasks".
+ * @param onIndent an indent drag released at a new depth.
+ * @param onMove a reorder dropped at an index in the list without the item and its children.
  */
 @Composable
-fun OutlineEditList(
+internal fun OutlineEditList(
     items: List<OutlineItem>,
     placeholder: String,
     addLabel: String,
+    childNoun: String,
     onTextChange: (itemId: String, text: String) -> Unit,
     onInsertAfter: (itemId: String) -> String,
     onAppend: () -> String,
     onDelete: (itemId: String) -> Unit,
+    onIndent: (itemId: String, depth: Int) -> Unit,
+    onMove: (itemId: String, index: Int, depth: Int) -> Unit,
+    drag: OutlineDragState,
     modifier: Modifier = Modifier,
 ) {
-    val numbers = Numbering.labels(items)
+    val shown = drag.shown(items)
+    val numbers = Numbering.labels(shown)
+    SideEffect { drag.list = DragList(items, shown, placeholder, childNoun, onIndent, onMove) }
     // The item whose field should take the focus: the one just added (the prototype's focusId).
     var focusId by remember { mutableStateOf<String?>(null) }
     Column(modifier) {
-        items.forEachIndexed { i, item ->
+        shown.forEachIndexed { i, item ->
             key(item.id) {
                 OutlineEditRow(
                     item,
                     numbers[i],
                     placeholder,
+                    drag,
                     autoFocus = item.id == focusId,
                     onTextChange = { onTextChange(item.id, it) },
                     onEnter = { focusId = onInsertAfter(item.id) },
@@ -157,6 +165,7 @@ private fun OutlineEditRow(
     item: OutlineItem,
     number: String,
     placeholder: String,
+    drag: OutlineDragState,
     autoFocus: Boolean,
     onTextChange: (String) -> Unit,
     onEnter: () -> Unit,
@@ -166,20 +175,14 @@ private fun OutlineEditRow(
     Row(
         Modifier
             .bleed(start = 30.dp, end = 8.dp)
+            .outlineDragRow(drag, item.id)
             .fillMaxWidth()
             .heightIn(min = 44.dp)
             .padding(start = INDENT * item.depth + 2.dp, end = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(width = 28.dp, height = 44.dp), contentAlignment = Alignment.Center) {
-            Icon(
-                painterResource(R.drawable.ic_drag_indicator),
-                "Drag to move or indent",
-                Modifier.size(20.dp),
-                tint = c.outlineStrong,
-            )
-        }
+        DragHandle(drag, item.id)
         Number(number, item.depth)
         UnderlinedField(
             item.text,

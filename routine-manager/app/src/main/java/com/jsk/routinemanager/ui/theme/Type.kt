@@ -88,6 +88,9 @@ object RmType {
     /** A list item's text field in edit mode: 16 / 400 at the input's `normal` line height. */
     val field = style(16f, 400)
 
+    /** The drag ghost's "+2 sub-tasks" (prototype: 12 / 400). */
+    val dragGhostCount = style(12f, 400)
+
     /** "Nothing here. Tap ✎ to add." (prototype: 15 / 400). */
     val emptyState = style(15f, 400)
     val badge = style(13f, 600)

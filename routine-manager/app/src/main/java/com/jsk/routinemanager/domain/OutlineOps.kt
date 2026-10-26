@@ -61,6 +61,29 @@ object OutlineOps {
     }
 
     /**
+     * An indent drag released at [depth] (README › Drag handle gestures): only the item changes. An
+     * indented parent becomes a child of the item above and its children stay at depth 1; an
+     * outdented child becomes a parent of the children after it.
+     */
+    fun setDepth(items: List<OutlineItem>, id: String, depth: Int): List<OutlineItem> =
+        normalize(items.map { if (it.id == id) it.copy(depth = depth) else it })
+
+    /**
+     * A reorder drop: the item and its children move together to [index] in the list without them.
+     * The item takes [depth], and its children shift by as much (README › Drag handle gestures).
+     */
+    fun moveSubtree(items: List<OutlineItem>, id: String, index: Int, depth: Int): List<OutlineItem> {
+        val from = items.indexOfFirst { it.id == id }
+        if (from < 0) return items
+        val end = subtreeEnd(items, from)
+        val delta = depth - items[from].depth
+        val moved = items.subList(from, end).map { it.copy(depth = (it.depth + delta).coerceIn(0, MAX_DEPTH)) }
+        val rest = items.filterIndexed { k, _ -> k !in from until end }
+        val at = index.coerceIn(0, rest.size)
+        return normalize(rest.subList(0, at) + moved + rest.subList(at, rest.size))
+    }
+
+    /**
      * When leaving edit mode or the list (README › Saving edits): items with no text (or only
      * spaces) are dropped and depths normalised. Kept text is not trimmed, as in the prototype.
      */

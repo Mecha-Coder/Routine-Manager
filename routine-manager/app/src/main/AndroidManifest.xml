@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- The 10 ms tick when a timetable long press starts a block (README › Haptics). -->
+    <!-- Exact haptic ticks: 10 ms on a timetable create, 12 ms on a reorder pick-up (SPEC §3.7). Granted at install, no prompt. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- No backup: data lives only on the phone (SPEC D14). -->
