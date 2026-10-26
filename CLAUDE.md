@@ -39,7 +39,7 @@ All milestones M1–M13 are built. The phone now holds the owner's **real data**
 
 ## Git identity
 
-This is a personal project. Commit and push only as **Mecha-Coder** (set in this repo's local git config, with GitHub's no-reply email). Never use any other GitHub account or a work email. If `gh auth status` shows another account as active, run `gh auth switch -u Mecha-Coder` first.
+This is a personal project. Commit and push only as **Mecha-Coder** (set in this repo's local git config, with GitHub's no-reply email). Never use any other GitHub account or a work email. Pushes always authenticate as Mecha-Coder: this repo's local git config has a credential helper that runs `gh auth token --user Mecha-Coder`, so it works whichever `gh` account is active. Don't switch the active `gh` account; the owner's other projects use a different one.
 
 ## Environment
 
