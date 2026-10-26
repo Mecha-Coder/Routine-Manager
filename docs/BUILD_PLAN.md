@@ -28,8 +28,8 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 | M9 Weekly timetable | Done |
 | M10 Block editor dialog | Done |
 | M11 App icon | Done |
-| M12 Release APK and install guide | Not started |
-| M13 User guide (README) and browser demo | Not started |
+| M12 Release APK and install guide | Done (24-hour run pending, owner) |
+| M13 User guide (README) and browser demo | Done |
 
 ## Test times used below
 
@@ -812,6 +812,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
   - Idle redraw, 11:39:26–11:42:27: 3 framestats frames ("Total frames rendered" 6, M2 note).
   - Crashes: only the 11:35:13 start crash of the `packageScope` build above; none since the fix. No ANRs. Before the first install I cleared the phone's crash buffer (`logcat -b crash -c`), so earlier crashes are no longer in it. Battery simulation was not used.
   - Left with the release app on the dashboard.
+- **Gate (26 Oct 2026, on `main` with M12 and M13 merged):** clean `assembleDebug lintDebug testDebugUnitTest assembleRelease lintRelease` passes (164 tests, 0 failures; lint 0 errors, the 2 accepted warnings, debug and release). Signed release APK 2,580,777 bytes installed with `adb install -r`; no crashes or ANRs. Memory, release app, 30 minutes (11:52–12:22): 39,814 KB at minute 5, 42,189 KB at minute 30 (+2.4 MB, all in the last sample; within the 5 MB rule). The real 12:00 Lunch start played the tone (audio focus 12:00:00.421).
 
 ---
 
@@ -833,10 +834,26 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - Browser demo: the prototype stays at `design/prototype/` with `support.js` beside it. The owner turns on GitHub Pages (repo Settings → Pages → Deploy from a branch → `main`, folder `/`). The README links to `https://mecha-coder.github.io/Routine-Manager/design/prototype/Routine%20Dashboard.dc.html` and also explains how to download the two files and open the HTML in Chrome.
 
 **Acceptance criteria**
-- [ ] Every user-visible feature in README › Screens and SPEC §2 has a walkthrough step with an image.
-- [ ] Screenshots show only sample data.
-- [ ] Every image and link in README.md works when viewed on github.com.
+- [x] Every user-visible feature in README › Screens and SPEC §2 has a walkthrough step with an image. (Things a still can't show, such as sound, screen-on, battery, rotation lock and backup, are text only under "Important details"; supervisor, M13.)
+- [x] Screenshots show only sample data.
+- [ ] Every image and link in README.md works when viewed on github.com. (Locally every image, anchor and file link resolves; `docs/INSTALL.md` comes from M12.)
 
 **Verify on GitHub** (nothing is installed on the phone in this milestone)
 - [ ] Each walkthrough step matches what the release app already does on the phone.
 - [ ] The owner opens the README on github.com and runs the browser demo from the Pages link on another device.
+
+**Notes**
+- **README sources:** the walkthrough follows the app as built (SPEC D1–D25 and every milestone's notes), not the handoff where they differ: tones Marimba / Soft chime / Steel drum with Soft chime the default (D25), the icon that follows the phone's dark mode (D24), Bedtime dimming with a swallowed first tap (D7), no backup (D14), rotation that ignores the rotation lock (D2).
+- **Demo URL:** `https://mecha-coder.github.io/Routine-Manager/design/prototype/Routine%20Dashboard.dc.html`. The same path, served from the repo root with `python3 -m http.server`, loads in Chromium (Playwright) with `support.js`, React and Babel from unpkg and the fonts; the only console error is a missing `favicon.ico`. Opening the file from disk (`file://`) could not be checked here (Playwright blocks it); the handoff README says it works in Chrome.
+- **Pages build:** "Deploy from a branch" runs Jekyll. HTML and JS files without front matter are copied unchanged, so the prototype's `{{ }}` template is not touched. Markdown files are rendered through Liquid, and no tracked `.md` file contains `{{` or `{%`, so the build should not fail. Pages is on (owner, 26 Oct: `main`, `/`); `curl -sI` on the demo URL and on `support.js` beside it returns `HTTP/2 200`.
+- **Decisions (supervisor, M13):** the app icon gets a rendered image instead of a launcher screenshot (a launcher shot would show the owner's other apps, and switching dark mode is a phone setting); things a still can't show are text only; no "Repository layout" section (not in the plan).
+- **Screenshots** (`docs/screenshots/`, 14 files, 310,569 bytes in all). Debug app, landscape `ROTATION_90`, light theme, sample data, debug fake clock paused:
+  - `01-dashboard` Mon 9:30 AM; `02-free-time` Sat 12:30 PM (left panel only); `03-bedtime` Mon 11:30 PM (dark palette; the dim isn't in a screencap).
+  - `04-todo`, `05-todo-edit`, `06-reorder`, `07-grocery`, `08-grocery-edit`: the right panel, cropped from x 912 px so the reorder ghost's bled left edge and shadow stay in.
+  - `06-reorder`: Sabah held with `input motionevent` DOWN, a 0.6 s wait and MOVE steps; captured while held, then moved back and released in place (the drop saved nothing).
+  - `09-settings`; `10-timetable` Mon 9:30 AM; `11-timetable-create`, a create gesture held on **Sunday**, because on today's column (Sat) the now line ran through the ghost's label; then ✕ without saving.
+  - `12-block-editor`: Lunch, Start hour tapped to 1 pm (End pushed to 2 pm), Save → `Overlaps “Work Session2” (1 PM – 5:30 PM) on Mon, Tue, Wed, Thu, Fri.`; the error line makes the card scroll, so the footer is cut at the bottom, as on the phone. Then ✕.
+  - `13-portrait`: the list menu at `ROTATION_0` (the supervisor rotated over adb and back).
+  - Processing: ImageMagick `-resize 75% -dither None -colors 256 PNG8:` (portrait 50 %): landscape shots 1200 × 540, right-panel crops 516 × 540, left panel 708 × 540, portrait 360 × 800. 6–44 KB each.
+  - `14-app-icon`: the release icon for a light and a dark phone, drawn from `res/drawable(-night)/ic_launcher_foreground.xml` and the `ic_launcher_background` colours, masked with One UI's squircle as M11's `preview2.py` does. Script in the session scratchpad (not in the repo or `temp/orchestration`), rendered with `rsvg-convert -z 2`, 960 × 500, 19.6 KB.
+- **Phone, 26 Oct:** debug Reset first, app volume 0 before any fake-clock jump, so the tones that played were silent. The app locker took focus once (M6 note); `am start` brought the app back. Afterwards `app_data.json` held the sample: 55 blocks (9 × 5 + 5 × 2), Lunch 720–780 on Mon–Fri, the sample lists. At the end: fake clock Live, then debug Reset, so light, Soft chime, 60 % with the tone baseline re-taken. App left on the live dashboard; `/sdcard/m13.xml` (the UI dumps) removed. No crashes or ANRs (`logcat -b crash`, `ANR in com.jsk`). No app code changed, so no build.
