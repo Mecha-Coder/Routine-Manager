@@ -69,6 +69,15 @@ class TimeFormatTest {
     }
 
     @Test
+    fun overlapTimesDropZeroMinutesButKeepTheRestSoTheMessageIsShortAndExact() {
+        assertEquals("7 AM", TimeFormat.shortTime(7 * 60))
+        assertEquals("5:30 PM", TimeFormat.shortTime(17 * 60 + 30))
+        assertEquals("12 PM", TimeFormat.shortTime(12 * 60))
+        assertEquals("12:15 AM", TimeFormat.shortTime(15))
+        assertEquals("12 AM", TimeFormat.shortTime(1440))
+    }
+
+    @Test
     fun dayAndDateAreShortEnglishWithoutYearOrLeadingZero() {
         assertEquals("Mon", TimeFormat.day(0))
         assertEquals("Sun", TimeFormat.day(6))

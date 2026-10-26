@@ -58,6 +58,16 @@ object TimeFormat {
     /** The create gesture's ghost label: `7:00 AM – 8:00 AM`. */
     fun ghostRange(start: Int, end: Int): String = "${time(start)} – ${time(end)}"
 
+    /**
+     * The block editor's overlap message: `7 AM` on the hour (README › Screens › 6), `5:30 PM` off
+     * it; 1440 is `12 AM`.
+     */
+    fun shortTime(minuteOfDay: Int): String {
+        val h = minuteOfDay / 60 % 24
+        val m = minuteOfDay % 60
+        return "${hour12(h)}${if (m == 0) "" else ":${pad2(m)}"} ${if (h < 12) "AM" else "PM"}"
+    }
+
     /** `Mon` for day index 0. */
     fun day(dayIndex: Int): String = days[dayIndex]
 

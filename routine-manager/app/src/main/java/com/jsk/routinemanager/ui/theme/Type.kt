@@ -126,6 +126,28 @@ object RmType {
     /** Drawn at 72 % opacity by the timetable. */
     val timetableBlockRange = style(10.5f, 400)
     val timetableHour = style(10f, 500)
+
+    /** The block editor's "Title", "Days", "Start", "End" and "Sub-routines" (prototype: 12 / 600). */
+    val fieldLabel = style(12f, 600)
+
+    /** The block editor's title field (prototype: 15 / 500). */
+    val titleField = style(15f, 500)
+
+    /** The block editor's sub-routine fields (prototype: 15 / 400). */
+    val subRoutineField = style(15f, 400)
+
+    /** The day toggles' M T W T F S S (prototype: 13 / 600). */
+    val dayToggle = style(13f, 600)
+
+    /** A wheel picker's values; the selected one is [wheelSelected] (prototype: 15 / 500 and 700). */
+    val wheel = style(15f, 500)
+    val wheelSelected = wheel.copy(fontWeight = FontWeight(700))
+
+    /** The `:` between a wheel's hour and minute (prototype: 15 / 600). */
+    val wheelColon = style(15f, 600)
+
+    /** The block editor's error line (prototype: 13 / 600). */
+    val error = style(13f, 600)
 }
 
 private fun TextStyle.rm() = merge(Base)

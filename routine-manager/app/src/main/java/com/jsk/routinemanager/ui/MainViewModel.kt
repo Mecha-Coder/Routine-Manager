@@ -15,6 +15,8 @@ import com.jsk.routinemanager.data.Settings
 import com.jsk.routinemanager.data.Theme
 import com.jsk.routinemanager.data.Tone
 import com.jsk.routinemanager.data.newId
+import com.jsk.routinemanager.domain.BlockDraft
+import com.jsk.routinemanager.domain.BlockRules
 import com.jsk.routinemanager.domain.ClockText
 import com.jsk.routinemanager.domain.GroceryOps
 import com.jsk.routinemanager.domain.OutlineOps
@@ -289,6 +291,21 @@ class MainViewModel(
     /** The weekly timetable's blocks (README › Screens › 5); null until loaded. */
     val timetableBlocks: StateFlow<List<Block>?> = blocks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
+
+    /**
+     * The block editor's Save (README › Screens › 6): saves the draft's group, or returns the first
+     * validation message and saves nothing. A block now covering now starts at once on the dashboard
+     * and plays the tone, because the routine follows the blocks (SPEC §3.1).
+     */
+    fun saveBlockGroup(draft: BlockDraft): String? {
+        // The editor opens only from the loaded timetable, so the data is there.
+        val blocks = checkNotNull(repository.data.value).blocks
+        BlockRules.validate(draft, blocks)?.let { return it }
+        repository.update { it.copy(blocks = BlockRules.save(it.blocks, draft, ::newId)) }
+        return null
+    }
+
+    fun deleteBlockGroup(groupId: String) = repository.update { it.copy(blocks = BlockRules.deleteGroup(it.blocks, groupId)) }
 
     /**
      * The timetable's minute, for today's column, the now line and the scroll on open. Null until

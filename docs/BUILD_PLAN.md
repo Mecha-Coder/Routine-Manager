@@ -22,11 +22,11 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 | M4 Night and power | Done |
 | M5 List menu, list view mode, portrait | Done |
 | M6 List edit mode | Done |
-| M7 Drag: indent and reorder | Not started |
+| M7 Drag: indent and reorder | Done |
 | M8 Settings and sound | Done |
 | M8b Two replacement tones | Done |
 | M9 Weekly timetable | Done |
-| M10 Block editor dialog | Not started |
+| M10 Block editor dialog | Done |
 | M11 App icon | Done |
 | M12 Release APK and install guide | Not started |
 | M13 User guide (README) and browser demo | Not started |
@@ -385,7 +385,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - [x] All three gestures work in a list long enough to scroll, in To-Do and in Self.
 - [x] A vertical swipe that starts on a handle scrolls the list.
 - [x] Order and depth survive a force-stop.
-- [ ] 30-minute memory check. (Supervisor.)
+- [x] 30-minute memory check.
 
 **Notes**
 - **Unit tests:** 127 (20 new): `DragMathTest` 14, `OutlineOpsTest` +6. Lint: 0 errors, the 2 accepted M1 warnings. `assembleRelease` builds.
@@ -455,6 +455,7 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
   - **Force-stop and relaunch:** To-Do and Self order and depths kept, in `app_data.json` and on screen.
   - **End state:** debug Reset (sample data; light, Soft chime, 60 %), fake clock Live, list menu shown. No crashes or ANRs (crash buffer, logcat, dropbox).
 - **Phone facts:** adb dropped once during an install ("device offline", no mDNS service); the owner re-enabled Wireless debugging. Afterwards the phone was listed only as `adb-R8YY710D4SN-23fgJR (2)._adb-tls-connect._tcp`.
+- **Gate (26 Oct 2026, on `main` with M7 and M10 merged):** clean `assembleDebug lintDebug testDebugUnitTest assembleRelease` passes (164 tests, 0 failures; lint 0 errors, the 2 accepted warnings). Installed; a reorder in To-Do edit mode and the block editor checked on the phone; no crashes or ANRs. Memory, 30 minutes (09:56–10:26): 105,284 KB at minute 5, 103,353 KB at minute 30, flat. Merge: one `VIBRATE` permission for both haptics; `RmElevation` holds both shadows, and the dialog shadow uses M7's CSS-to-Android blur rule (radius 20 dp for CSS blur 40). The two private 10/12 ms haptic helpers stay separate (tiny).
 
 ---
 
@@ -691,12 +692,58 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 - Rules: End `12:00 am` = midnight; moving Start to or past End pushes End to Start + 60 min (max midnight); validation order and messages; multi-day groups (editing any copy edits the group, deselecting a day removes that copy, Delete removes the group).
 
 **Acceptance criteria**
-- [ ] Unit tests: validation order and exact messages, including `Overlaps “Commute” (7 AM – 8 AM) on Mon, Tue.`; saving a group keeps each day's block id; midnight handling; Start pushing End.
+- [x] Unit tests: validation order and exact messages, including `Overlaps “Commute” (7 AM – 8 AM) on Mon, Tue.`; saving a group keeps each day's block id; midnight handling; Start pushing End.
 
 **Install on the phone and verify**
-- [ ] Create, edit, delete a block; overlap error shown.
-- [ ] With the keyboard open in landscape the dialog scrolls and Save is reachable.
-- [ ] Editing today's current block updates the dashboard at once; creating a block that covers now plays the tone (SPEC §3.1).
+- [x] Create, edit, delete a block; overlap error shown.
+- [x] With the keyboard open in landscape the dialog scrolls and Save is reachable.
+- [x] Editing today's current block updates the dashboard at once; creating a block that covers now plays the tone (SPEC §3.1).
+
+**Notes**
+- **Where things are:**
+  - `domain/BlockRules.kt` gains the editor's rules, ported from the prototype's `openSheet`, `wIdx`/`wSet`, `saveSheet` and `deleteSheet`:
+    - `BlockDraft` (group id or null for a new block, title, sorted days, start, end, subs) and `WheelTime` (hour index 0..11 where 0 shows `12`, quarter 0..3, pm);
+    - `newDraft`, `editDraft` (the tapped block's whole group), `wheelTime` / `minutes`, `withStart` (Start to or past End pushes End to Start + 60, at most 1440), `withEnd` (a wheel `12:00 am` end is 1440), `toggleDay`;
+    - `validate` (README order and messages; the group's own copies never clash; the message names the first clash in saved order and every selected day with a clash), `save` (one block per day; a day that had a copy keeps its block id, so editing the current block is no block change and plays no tone), `deleteGroup`; `MAX_SUBS`.
+  - `TimeFormat.shortTime`: `7 AM` on the hour, `5:30 PM` off it, 1440 = `12 AM` (SPEC §3.7).
+  - `MainViewModel.saveBlockGroup(draft)` validates against the saved blocks and saves, or returns the message; `deleteBlockGroup(groupId)`.
+  - `ui/editor/BlockEditorDialog.kt` (with `EditorRequest`, moved from the placeholder, which is deleted) and `ui/editor/WheelPicker.kt`.
+  - Theme: RmType `fieldLabel` 12/600, `titleField` 15/500, `subRoutineField` 15/400, `dayToggle` 13/600, `wheel` 15/500, `wheelSelected` 15/700, `wheelColon` 15/600, `error` 13/600 (prototype values); RmShapes `wheelBand` (8); `ui/theme/Elevation.kt` with `RmElevation.dialog`, the light-mode shadow (null in dark mode, where the dialog has only its 1 dp `divider` border).
+  - `UnderlinedField` gains `textPadding` (default unchanged, 9 / 10 dp); sub-routine fields use 8.1 / 9.1 dp so a 15 sp field is the prototype's 36 dp.
+- **Draft state:** the unsaved values are `remember`s in the dialog (the activity isn't recreated on rotation), not a separate ViewModel. Title, days and times are one `BlockDraft`; sub-routines are a list of fields with ids, so each row keeps its text and focus as rows come and go. As in the prototype, a change to the title, days or times hides the error; sub-routine edits don't.
+- **Still drawn in the activity's window**, like M9's placeholder, not a Compose `Dialog`, so `ScreenPolicy` swallows the first touch at Bedtime with no extra code. The scrim takes every touch; a tap on it does nothing (README: no Cancel).
+- **Layout** follows the prototype's markup, measured in Chrome (dp inside the card: border 1, padding 16 / 20; columns 268 wide with a 22 gap; wheel box 129 × 74 with a 115 × 24 band; sub-routine rows 36):
+  - The prototype's `repeat(auto-fit, minmax(220px, 1fr))` is a custom two-child layout: side by side when each column gets 220 dp (landscape), stacked with a 14 dp gap otherwise (portrait). One layout for both, so rotation keeps text, focus and wheel positions.
+  - The card is at most 600 dp wide, sits 16 dp from the screen edges (the notch's depth on its side, SPEC D18) and above the keyboard (`windowInsetsPadding(ime)`), and its content scrolls.
+  - The sub-routine ✕ is 34 dp (prototype; README › Screens › 6's fixed 206 dp column has no room for 40 dp rows). Supervisor decision, M10.
+- **Wheel picker:** a `LazyColumn` per drum with a snap fling (`SnapPosition.Center`), 24 dp content padding above and below so the first and last values reach the band, and the prototype's mask (clear at the edges, solid from 32 % to 68 %) drawn with `BlendMode.DstIn` on an offscreen layer.
+  - The value under the band is a `derivedStateOf` that changes only when the scroll passes half a row; it is reported at once, as the prototype's `onScroll` does, so a scroll recomposes the drum once per value, not per frame.
+  - A tap on a value, or Start pushing End, moves the drum with `scrollToItem` (the prototype sets `scrollTop`, no animation).
+  - A nested-scroll connection consumes what a drum can't use (`overscroll-behavior: contain`), so the dialog doesn't scroll and the drum doesn't stretch at its ends.
+- **Unit tests:** 144 (19 new: `BlockRulesTest` +18, `TimeFormatTest` +1). Lint: 0 errors, the 2 accepted M1 warnings. `assembleRelease` builds: 3,556,802 bytes unsigned, 157 KB more than at M9.
+- **Phone, 26 Oct (debug build, landscape ROTATION_90, unplugged, Gboard; app volume 0 for every check; real clock Mon 09:3x unless noted; adb taps, `input text`, `input swipe` and `input motionevent`):**
+  - **Layout against the prototype in Chrome** (`temp/screenshot/m10-proto-edit.png` vs `m10-phone-edit-light.png`), dp inside the card, phone / prototype: title field 78.9–121.1 / 78–120; day toggles centre 165.6 / 164; wheel box top 210.7 / 208, 74.1 tall / 74; card 351.5 / 349 tall, which just fits the phone's 352 dp. The 1–3 dp drift is the labels' and gaps' rounding to whole pixels at 1.875 px/dp. Sub-routines column at x 310.4 / 311. Colours: card `bg`, border `divider`; in light mode the shadow darkens the scrim above the card.
+  - **Edit** (tap Mon Lunch): "Edit block" with Mon–Fri, 12:00–1:00 pm, Eat and Short walk, and Delete.
+    - A tap on Start hour `1`: Start 1:00 pm, and End pushed to 2:00 pm; both drums moved.
+    - Save: `Overlaps “Work Session2” (1 PM – 5:30 PM) on Mon, Tue, Wed, Thu, Fri.` with the accent `error` icon. The error line makes the card 28 dp taller than the screen, so the footer is reached by scrolling the card, as in the prototype (`m10-phone-overlap.png`).
+    - A slow swipe down on End hour past its top: End 12:00 pm, the error hidden, and the card didn't scroll. Save: `End time must be after the start time.`
+    - A fling on Start hour moved it 3 rows and snapped to 5:00 pm; End followed live to 6:00 pm (`m10-phone-fling2.png`).
+    - Back closed the keyboard, then the dialog; `app_data.json` still had Lunch unchanged.
+  - **Create** (long press on Sat 12:30, free time): "New block", Sat only, 12:30–1:30 pm, no Delete.
+    - Save with no title and no day: `Give the block a title.` Typed a title: `Pick at least one day.`
+    - With Sat and Sun selected, "Add sub-routine" then Enter after each text gave focused fields below; at 5 fields "Add sub-routine" was gone and Enter added nothing; Backspace on the empty 5th removed it, the keyboard closed (as in the prototype) and "Add sub-routine" came back.
+    - Saved: two blocks with one `groupId`, 750–810, subs `Warm up, Run, Stretch, Shower`.
+    - Edited from the Sat copy (renamed, ✕ on Run, Sun deselected): Sat kept block id `9a0b57ca…`, Sun's copy was removed. Delete removed it. A second Sat + Sun group deleted from its Sun copy removed both.
+  - **Current block:** Mon Work Session1 renamed "Deep work": the dashboard showed `CURRENT Deep work` on return, and `dumpsys audio` had no focus request from the app (same block id, so no tone).
+  - **Create covering now:** debug clock Sat 12:30 PM paused (Free time), a long press made Sat 12:15–1:15 PM. Save's touch up 09:45:09.447, `requestAudioFocus` from `TonePlayer` (USAGE_MEDIA / CONTENT_TYPE_SONIFICATION) 09:45:09.809, 362 ms later. The Sat copy then showed in the accent as the current block (`m10-phone-gym-current.png`).
+  - **Keyboard in landscape:** Gboard takes the bottom 375 px; the card shrinks to the space above it (flush with its top) and scrolls. Save and Delete scrolled into view with the keyboard open (`m10-phone-kb-swipe2.png`). A swipe on a drum past its end, with the card scrollable, moved neither the card nor the drum. In one early run the keyboard closed during a card scroll (the title kept its focus); two later runs with the same swipes kept it open, so the cause wasn't found.
+  - **Bedtime** (debug Mon 11:29 PM, `Display Brightness=0.05` with our activity's override): with the timetable dim, the first tap on a block only brightened (0.31) and the second opened the editor. With the editor open and dim again 30 s later, a tap on Monday's toggle only brightened and Monday stayed selected (pixel `#EDEDED`); the next tap deselected it. A ✕ tap after another 30 s only brightened too. So the in-window dialog gets the dim and the swallowed first touch with no extra code.
+  - **Dark palette** (Bedtime): card `#000000` with a 1 dp `#353535` border, the white 62 % scrim (`#9E9E9E` over black), no shadow, band `surface` (`m10-phone-dark-dialog.png`).
+  - **Rotation** (the supervisor rotated over adb: ROTATION_0, then back to ROTATION_90), with Lunch's editor holding unsaved Start 1:00 pm / End 2:00 pm, Sat added, and a new focused sub-routine "Nap" with Gboard open:
+    - Portrait: everything kept, including the focus and the keyboard; typing went on in "Nap". One column; the card's top at 34 dp, under the notch; Delete and Save scroll into view above the keyboard (`m10-rot-portrait.png`, `m10-rot-portrait-scrolled.png`).
+    - Back in landscape: the same values, focus and keyboard; the wheels still at 1:00 / 2:00 pm (`m10-rot-back-landscape.png`). Closed without saving; Lunch unchanged.
+  - **uiautomator** reports the day toggles, ✕ and the close button as `clickable=false` / `checkable=false` (the toggle shows as a separate `CheckBox` node), so toggle states were read from screenshot pixels. Not looked into further.
+  - **Afterwards:** debug Reset (55 sample blocks, light, Soft chime, 60 %), clock Live, app on the dashboard. No crashes or ANRs (`logcat -b crash`, `ANR in com.jsk`, `FATAL EXCEPTION` since install, dropbox). Battery simulation was not used. The supervisor restores the rotation defaults.
 
 ---
 

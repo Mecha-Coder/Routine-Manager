@@ -122,6 +122,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 - **Enter** in a list or sub-routine field is the keyboard's action key (fields are single-line).
 - **Backspace on an empty field** may not be reported by Samsung Keyboard. If it can't be detected reliably, the ✕ button is the supported way to delete an item, and M6 records what was found.
 - **Haptics** as in the README (12 ms reorder pick-up, 10 ms timetable create).
+- **Block editor overlap message:** times show minutes only when not on the hour (`7 AM – 8 AM`, `5:30 PM – 6:30 PM`). **Sub-routine ✕ buttons** are 34 dp as in README › Screens › 6 and the prototype, not the 40 dp of README › Icon buttons, so five rows fit the editor's column. (Supervisor, M10.)
 
 ### 3.8 Notes on reading the prototype
 

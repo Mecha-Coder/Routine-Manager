@@ -3,6 +3,7 @@ package com.jsk.routinemanager.ui.components
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
@@ -55,6 +56,7 @@ import kotlinx.coroutines.flow.drop
  * @param onEnter the keyboard's action key (SPEC §3.7); without it the key closes the keyboard.
  * @param onBackspaceWhenEmpty Backspace in an empty field, when the keyboard sends it as a key
  *   event (Gboard does, M6 notes); ✕ is the delete path that always works (SPEC §3.7).
+ * @param textPadding space above and below the text; the bottom includes the 1 dp line.
  */
 @Composable
 fun UnderlinedField(
@@ -67,6 +69,8 @@ fun UnderlinedField(
     autoFocus: Boolean = false,
     onEnter: (() -> Unit)? = null,
     onBackspaceWhenEmpty: (() -> Unit)? = null,
+    // 9 dp above and below the text, then the 1 dp line (the lists' fields).
+    textPadding: PaddingValues = PaddingValues(top = 9.dp, bottom = 10.dp),
 ) {
     val c = RmTheme.colors
     val state = rememberTextFieldState(initialText)
@@ -114,8 +118,7 @@ fun UnderlinedField(
         interactionSource = interaction,
         cursorBrush = SolidColor(c.textPrimary),
         decorator = { innerTextField ->
-            // 9 dp above and below the text, then the 1 dp line.
-            Box(Modifier.padding(top = 9.dp, bottom = 10.dp)) {
+            Box(Modifier.padding(textPadding)) {
                 if (state.text.isEmpty()) Text(placeholder, color = c.textHint, style = style)
                 innerTextField()
             }

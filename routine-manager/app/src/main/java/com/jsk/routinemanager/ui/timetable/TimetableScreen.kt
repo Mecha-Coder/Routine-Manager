@@ -72,7 +72,7 @@ import com.jsk.routinemanager.domain.dayIndex
 import com.jsk.routinemanager.domain.minuteOfDay
 import com.jsk.routinemanager.ui.MainViewModel
 import com.jsk.routinemanager.ui.components.RmIconButton
-import com.jsk.routinemanager.ui.editor.BlockEditorPlaceholder
+import com.jsk.routinemanager.ui.editor.BlockEditorDialog
 import com.jsk.routinemanager.ui.editor.EditorRequest
 import com.jsk.routinemanager.ui.theme.RmShapes
 import com.jsk.routinemanager.ui.theme.RmTheme
@@ -124,7 +124,7 @@ fun TimetableScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val now = viewModel.now.collectAsStateWithLifecycle()
     val today by remember { derivedStateOf { now.value?.let { dayIndex(it.toLocalDate()) } } }
     val nowMinute = remember { { now.value?.let(::minuteOfDay) ?: 0.0 } }
-    // Placeholder until M10. Kept through rotation (the activity is not recreated), dropped on Back.
+    // The open block editor. Kept through rotation (the activity is not recreated), dropped on Back.
     var editor by remember { mutableStateOf<EditorRequest?>(null) }
     val vibrator = rememberVibrator()
     val haptic = remember(vibrator) { { vibrator.tick(CREATE_HAPTIC_MS) } }
@@ -178,7 +178,15 @@ fun TimetableScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 )
             }
         }
-        editor?.let { BlockEditorPlaceholder(it, blocks.orEmpty(), onClose = { editor = null }) }
+        editor?.let { request ->
+            BlockEditorDialog(
+                request,
+                blocks.orEmpty(),
+                onSave = viewModel::saveBlockGroup,
+                onDelete = viewModel::deleteBlockGroup,
+                onClose = { editor = null },
+            )
+        }
     }
 }
 
