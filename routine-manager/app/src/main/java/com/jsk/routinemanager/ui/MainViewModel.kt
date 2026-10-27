@@ -26,6 +26,7 @@ import com.jsk.routinemanager.domain.ScreenRules
 import com.jsk.routinemanager.domain.TimeFormat
 import com.jsk.routinemanager.domain.dayIndex
 import com.jsk.routinemanager.domain.minuteOfDay
+import com.jsk.routinemanager.sound.BlockVibrator
 import com.jsk.routinemanager.sound.TonePlayer
 import com.jsk.routinemanager.ui.lists.ListKey
 import kotlinx.coroutines.flow.Flow
@@ -111,6 +112,7 @@ class MainViewModel(
     private val repository: DataRepository,
     minuteTicks: Flow<LocalDateTime>,
     private val tonePlayer: TonePlayer,
+    private val blockVibrator: BlockVibrator,
 ) : ViewModel() {
 
     private val shown = MutableStateFlow<Screen>(Screen.Home)
@@ -249,12 +251,27 @@ class MainViewModel(
         tonePlayer.setVolume(volume)
     }
 
-    /** "Preview sound" plays the selected tone; while playing, the button stops it. */
+    /**
+     * The speaker button beside the slider switches Sound and Vibrate (SPEC D26). Switching stops a
+     * playing tone; switching to Vibrate vibrates once, as One UI's own sound-mode button does.
+     */
+    fun toggleVibrate() {
+        val vibrate = repository.data.value?.settings?.vibrate?.not() ?: return
+        updateSettings { it.copy(vibrate = vibrate) }
+        tonePlayer.stop()
+        if (vibrate) blockVibrator.vibrate()
+    }
+
+    /**
+     * "Preview sound" plays the selected tone; while playing, the button stops it. In Vibrate mode
+     * it is "Preview vibration" and vibrates once.
+     */
     fun togglePreview() {
-        if (tonePlayer.playing.value) {
-            tonePlayer.stop()
-        } else {
-            repository.data.value?.settings?.let { tonePlayer.play(it.tone, it.volume) }
+        val settings = repository.data.value?.settings ?: return
+        when {
+            settings.vibrate -> blockVibrator.vibrate()
+            tonePlayer.playing.value -> tonePlayer.stop()
+            else -> tonePlayer.play(settings.tone, settings.volume)
         }
     }
 
@@ -325,7 +342,7 @@ class MainViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val container = (this[APPLICATION_KEY] as RoutineApp).container
-                MainViewModel(container.repository, container.minuteTicks, container.tonePlayer)
+                MainViewModel(container.repository, container.minuteTicks, container.tonePlayer, container.blockVibrator)
             }
         }
     }

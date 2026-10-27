@@ -87,6 +87,24 @@ class AppDataJsonTest {
     }
 
     @Test
+    fun aFileSavedBeforeVibrateModeLoadsWithSoundAndKeepsItsData() {
+        // Vibrate mode (SPEC D26) was added after the owner's real data was on the phone. Their saved
+        // file has no "vibrate" field; it must load with the tone they already use, not reset.
+        val before = """{"settings":{"theme":"dark","tone":"chime","volume":35},"todo":[{"id":"a","text":"x"}]}"""
+        val loaded = decode(before.encodeToByteArray())
+        assertEquals(Settings(Theme.DARK, Tone.CHIME, 35, vibrate = false), loaded.settings)
+        assertEquals(listOf(OutlineItem("a", "x")), loaded.todo)
+    }
+
+    @Test
+    fun vibrateModeSurvivesARestart() {
+        // The office use (SPEC D26): if the choice were lost when the app restarts, the next block
+        // change would play the tone out loud.
+        val data = AppData(settings = Settings(vibrate = true))
+        assertTrue(decode(encode(data)).settings.vibrate)
+    }
+
+    @Test
     fun unknownFieldsAreIgnoredSoAFileFromANewerVersionStillLoads() {
         val json = """{"schemaVersion":1,"somethingNew":[1,2],"todo":[{"id":"a","text":"x","extra":true}]}"""
         assertEquals(listOf(OutlineItem("a", "x")), decode(json.encodeToByteArray()).todo)

@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -42,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
@@ -127,7 +129,7 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onTimetable: ()
                 GeneralColumn(current.theme, viewModel::setTheme, onTimetable, modifier)
             }
             val sound = @Composable { modifier: Modifier ->
-                SoundColumn(current, playing, viewModel::pickTone, viewModel::setVolume, viewModel::togglePreview, modifier)
+                SoundColumn(current, playing, viewModel::pickTone, viewModel::setVolume, viewModel::toggleVibrate, viewModel::togglePreview, modifier)
             }
             if (maxWidth >= COLUMN_MIN_WIDTH * 2 + COLUMN_GAP) {
                 Row(horizontalArrangement = Arrangement.spacedBy(COLUMN_GAP)) {
@@ -208,13 +210,18 @@ private fun GeneralColumn(theme: Theme, onTheme: (Theme) -> Unit, onTimetable: (
     }
 }
 
-/** Block-change sound: one card of three tone rows and the volume row, then Preview / Stop. */
+/**
+ * Block-change sound: one card of three tone rows and the volume row, then Preview / Stop. The
+ * icon at the start of the volume row is a button that switches Sound and Vibrate, as on One UI's
+ * volume panel (SPEC D26); in Vibrate mode the slider is greyed out and can't be moved.
+ */
 @Composable
 private fun SoundColumn(
     settings: Settings,
     playing: Boolean,
     onTone: (Tone) -> Unit,
     onVolume: (Int) -> Unit,
+    onVibrate: () -> Unit,
     onPreview: () -> Unit,
     modifier: Modifier,
 ) {
@@ -236,13 +243,27 @@ private fun SoundColumn(
                         .fillMaxWidth()
                         .heightIn(min = 50.dp)
                         .background(c.surface, RmShapes.settingsCardRow)
-                        .padding(horizontal = 18.dp),
+                        // 9 + half the 40 dp button = 18 + half a 22 dp icon: the icon stays under the radio dots.
+                        .padding(start = 9.dp, end = 18.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(painterResource(R.drawable.ic_volume_down), null, Modifier.size(22.dp))
-                    VolumeSlider(settings.volume, onVolume, Modifier.weight(1f))
-                    Text("${settings.volume}%", Modifier.width(40.dp), textAlign = TextAlign.End, style = RmType.control)
+                    RmIconButton(
+                        if (settings.vibrate) R.drawable.ic_vibration else R.drawable.ic_volume_down,
+                        if (settings.vibrate) "Vibrate. Switch to sound" else "Sound. Switch to vibrate",
+                        onVibrate,
+                        Modifier.background(c.bg, CircleShape),
+                        size = 40.dp,
+                        iconSize = 22.dp,
+                    )
+                    VolumeSlider(settings.volume, onVolume, enabled = !settings.vibrate, Modifier.weight(1f))
+                    Text(
+                        "${settings.volume}%",
+                        Modifier.width(40.dp),
+                        color = if (settings.vibrate) c.textHint else Color.Unspecified,
+                        textAlign = TextAlign.End,
+                        style = RmType.control,
+                    )
                 }
             }
             Row(
@@ -257,12 +278,20 @@ private fun SoundColumn(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    painterResource(if (playing) R.drawable.ic_stop else R.drawable.ic_play_arrow),
+                    painterResource(if (playing && !settings.vibrate) R.drawable.ic_stop else R.drawable.ic_play_arrow),
                     null,
                     Modifier.size(20.dp),
                     tint = c.onPrimary,
                 )
-                Text(if (playing) "Stop" else "Preview sound", color = c.onPrimary, style = RmType.buttonSmall)
+                Text(
+                    when {
+                        settings.vibrate -> "Preview vibration"
+                        playing -> "Stop"
+                        else -> "Preview sound"
+                    },
+                    color = c.onPrimary,
+                    style = RmType.buttonSmall,
+                )
             }
         }
     }
@@ -299,13 +328,16 @@ private val THUMB_RADIUS = 8.dp
  * 0..100 in whole steps, drawn like the prototype's range input (Chrome, `accent-color` ink): an
  * 8 dp track with a 1 dp `outline` border, filled with `textPrimary` up to a 16 dp round thumb.
  * A tap sets the value; so does a sideways drag, so a vertical swipe on it still scrolls the screen.
+ * When not [enabled] (Vibrate mode) it ignores touches and is drawn in `textHint` and `outlineSoft`.
  *
  * Not Material's Slider: with a custom thumb and track inside a weighted row, its touch positions
  * didn't match the drawn track (the last 10 dp at each end did nothing, M8 notes).
  */
 @Composable
-private fun VolumeSlider(volume: Int, onVolume: (Int) -> Unit, modifier: Modifier) {
+private fun VolumeSlider(volume: Int, onVolume: (Int) -> Unit, enabled: Boolean, modifier: Modifier) {
     val c = RmTheme.colors
+    val ink = if (enabled) c.textPrimary else c.textHint
+    val border = if (enabled) c.outline else c.outlineSoft
     val current by rememberUpdatedState(volume)
     val change by rememberUpdatedState(onVolume)
     fun PointerInputScope.select(x: Float) {
@@ -317,13 +349,20 @@ private fun VolumeSlider(volume: Int, onVolume: (Int) -> Unit, modifier: Modifie
         modifier
             .height(48.dp)
             .progressSemantics(volume.toFloat(), 0f..100f)
-            .pointerInput(Unit) { detectTapGestures(onTap = { select(it.x) }) }
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragStart = { select(it.x) },
-                    onHorizontalDrag = { drag, _ -> select(drag.position.x) },
-                )
-            }
+            .then(
+                if (enabled) {
+                    Modifier
+                        .pointerInput(Unit) { detectTapGestures(onTap = { select(it.x) }) }
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures(
+                                onDragStart = { select(it.x) },
+                                onHorizontalDrag = { drag, _ -> select(drag.position.x) },
+                            )
+                        }
+                } else {
+                    Modifier
+                }
+            )
     ) {
         val radius = THUMB_RADIUS.toPx()
         val trackHeight = 8.dp.toPx()
@@ -332,13 +371,13 @@ private fun VolumeSlider(volume: Int, onVolume: (Int) -> Unit, modifier: Modifie
         val corner = CornerRadius(trackHeight / 2)
         val thumbX = radius + (size.width - 2 * radius) * volume / 100f
         drawRoundRect(
-            c.outline,
+            border,
             topLeft = Offset(stroke / 2, top + stroke / 2),
             size = Size(size.width - stroke, trackHeight - stroke),
             cornerRadius = corner,
             style = Stroke(stroke),
         )
-        drawRoundRect(c.textPrimary, topLeft = Offset(0f, top), size = Size(thumbX, trackHeight), cornerRadius = corner)
-        drawCircle(c.textPrimary, radius, Offset(thumbX, size.height / 2))
+        drawRoundRect(ink, topLeft = Offset(0f, top), size = Size(thumbX, trackHeight), cornerRadius = corner)
+        drawCircle(ink, radius, Offset(thumbX, size.height / 2))
     }
 }

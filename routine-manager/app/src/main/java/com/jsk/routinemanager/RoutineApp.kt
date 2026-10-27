@@ -10,6 +10,7 @@ import com.jsk.routinemanager.data.DataRepository
 import com.jsk.routinemanager.data.keepCorruptCopyAndStartOver
 import com.jsk.routinemanager.debug.DebugEntry
 import com.jsk.routinemanager.sound.BlockChime
+import com.jsk.routinemanager.sound.BlockVibrator
 import com.jsk.routinemanager.sound.TonePlayer
 import com.jsk.routinemanager.time.AppClock
 import com.jsk.routinemanager.time.minuteTicks
@@ -58,9 +59,16 @@ class AppContainer(context: Context) {
 
     val tonePlayer = TonePlayer(context)
 
-    /** Plays the selected tone at its volume when a block starts (SPEC §3.1). Fed by MainActivity while visible. */
+    val blockVibrator = BlockVibrator(context)
+
+    /**
+     * Plays the selected tone at its volume when a block starts, or vibrates in Vibrate mode
+     * (SPEC §3.1, D26). Fed by MainActivity while visible.
+     */
     val chime = BlockChime(MainScope()) {
-        repository.data.value?.settings?.let { tonePlayer.play(it.tone, it.volume) }
+        repository.data.value?.settings?.let {
+            if (it.vibrate) blockVibrator.vibrate() else tonePlayer.play(it.tone, it.volume)
+        }
     }
 
     private companion object {

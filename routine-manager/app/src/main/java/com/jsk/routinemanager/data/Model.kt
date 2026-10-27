@@ -35,6 +35,8 @@ data class Settings(
     val tone: Tone = Tone.CHIME,
     /** 0..100. */
     val volume: Int = 60,
+    /** Block changes vibrate instead of playing the tone (SPEC D26). Files saved before it load as false. */
+    val vibrate: Boolean = false,
 )
 
 @Serializable

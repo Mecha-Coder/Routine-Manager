@@ -908,3 +908,29 @@ Owner decisions recorded in SPEC D10 and §3.1 (commit 8c30fe4). Not a numbered 
 - Release app updated with `adb install -r` at 08:32 (`firstInstallTime` still 26 Oct 11:35, so the data was kept): the owner's own blocks and lists show (1st Work 06:00–11:30, To-Do 6), no crashes or ANRs, alarm volume 8 of 15.
 - Left to the owner, by ear: loudness with the phone turned down, and the tone in silent mode and Do Not Disturb.
 - Owner, 27 Oct: the tone is loud enough. Silent mode and Do Not Disturb were not reported separately.
+
+---
+
+## After release: Vibrate mode (27 Oct 2026)
+
+Owner decision recorded in SPEC D26. Not a numbered milestone. Reason: in an office the tone disturbs people, and silencing the whole phone was the only way to stop it.
+
+**What changed**
+- `data/Model.kt`: `Settings.vibrate` (default false). Additive field, so no schema bump: a file without it loads in Sound mode.
+- `sound/BlockVibrator.kt` (new): three 400 ms pulses, 200 ms apart, with `VibrationAttributes.USAGE_ALARM` (API 33+; `AudioAttributes.USAGE_ALARM` below). Uses the `VIBRATE` permission added in M7/M9.
+- `RoutineApp.kt`: the `BlockChime` callback vibrates instead of playing the tone when `vibrate` is on. The trigger rules (`BlockChime`) are unchanged.
+- `ui/MainViewModel.kt`: `toggleVibrate()` saves the switch, stops a playing tone, and vibrates once when switching to Vibrate; `togglePreview()` vibrates in Vibrate mode.
+- `ui/settings/SettingsScreen.kt`: the volume row's icon is now an `RmIconButton` (40 dp, `bg` circle, icon 22 dp, centred under the radio dots); `volume_down` / new `ic_vibration`. In Vibrate mode `VolumeSlider(enabled = false)` takes no touch input and draws in `textHint` / `outlineSoft`, and the % label is `textHint`. The Preview button reads "Preview vibration".
+- `AppDataJsonTest`: a file saved before this loads in Sound mode with its lists; `vibrate = true` survives a save and reload.
+- `README.md` (Settings › Sound or Vibrate, Important details) and SPEC D26 / §3.1.
+
+**Verification**
+- `./gradlew assembleDebug lintDebug testDebugUnitTest`: pass, 168 tests, 0 failures, 0 skipped; lint only the 2 accepted warnings. `assembleRelease lintRelease`: pass, same 2 warnings.
+- Phone, debug app (reinstalled with `installDebug` for this; sample data):
+  - Settings: the button switches Sound ↔ Vibrate and its label and icon follow (`temp/screenshot/vib-1-sound.png`, `vib-2-vibrate.png`); the file saved `"vibrate":true`.
+  - Switching to Vibrate: one `usage: ALARM` vibration of 1,613 ms in `dumpsys vibrator_manager`, pattern 0/400/200/400/200/400. The owner felt it.
+  - Vibrate mode: a tap and a drag on the greyed slider left it at 60 %; Preview vibration vibrated; no audio focus request from the app at any point.
+  - Fake clock at 60× across a block start on Tue (sample data), dashboard on screen: one alarm vibration at 09:05:52, no audio focus request (no tone).
+  - Switched back to Sound, fake clock Live, debug app force-stopped. No crashes or ANRs.
+- Release app updated with `adb install -r` at 09:07 (`firstInstallTime` still 26 Oct 11:35): the owner's blocks and lists show (1st Work, To-Do), Settings shows the button in Sound mode (the owner's setting untouched), no crashes.
+- Not checked: the Settings screen in dark theme and in portrait (it uses only theme tokens and the existing row layout).
