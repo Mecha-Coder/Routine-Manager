@@ -14,6 +14,8 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 
 ## Status
 
+**Project complete (27 Oct 2026).** All milestones are done and the overnight run passed (SPEC D20). Later changes follow CLAUDE.md › After release.
+
 | Milestone | Status |
 |---|---|
 | M1 Foundation: window, theme, font, icons | Done |
@@ -814,6 +816,8 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 5. Commit and push ("Close project: …").
 6. Tell the owner they may uninstall **Routine Manager (debug)** from the phone, checking the "(debug)" in the name. **Never** uninstall **Routine Manager**.
 
+All six steps done by 27 Oct 2026. The owner removed the debug app; only `com.jsk.routinemanager` is installed.
+
 **Notes**
 - **Signing (`app/build.gradle.kts`):** `signingConfigs.release` reads `routine-manager/keystore.properties` (`storeFile` as an absolute path, `storePassword`, `keyAlias`, `keyPassword`) and the release build type uses it. Without the file, `validateSigningRelease` stops a release build with `Release signing isn't set up: <path>/keystore.properties is missing. See docs/INSTALL.md, step 1.` (AGP's own message was `Keystore file not set for signing config release`). Debug builds, unit tests and `lintRelease` don't need the file, so a worktree without it still builds debug; `assembleRelease` there now fails instead of making an unsigned APK. The configuration cache stays on: the same message comes from a reused cache entry.
 - **Root `.gitignore`:** `keystore.properties`, `*.jks`, `*.keystore`.
@@ -903,3 +907,4 @@ Owner decisions recorded in SPEC D10 and §3.1 (commit 8c30fe4). Not a numbered 
 - Supervisor, 27 Oct: `assembleDebug lintDebug testDebugUnitTest` and `assembleRelease lintRelease` re-run: pass, 166 tests, 0 failures, 0 skipped; lint only the 2 accepted warnings. README demo table: the app's Bedtime row now names the tone at its start.
 - Release app updated with `adb install -r` at 08:32 (`firstInstallTime` still 26 Oct 11:35, so the data was kept): the owner's own blocks and lists show (1st Work 06:00–11:30, To-Do 6), no crashes or ANRs, alarm volume 8 of 15.
 - Left to the owner, by ear: loudness with the phone turned down, and the tone in silent mode and Do Not Disturb.
+- Owner, 27 Oct: the tone is loud enough. Silent mode and Do Not Disturb were not reported separately.

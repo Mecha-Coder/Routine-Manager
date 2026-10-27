@@ -8,7 +8,7 @@ Milestones normally run through the supervisor: the owner types `/supervise` (ru
 
 ## After release (read before changing the app later)
 
-All milestones M1–M13 are built. The phone now holds the owner's **real data** in the release app, and there is no backup (SPEC D14).
+All milestones M1–M13 are built and the project was closed on 27 Oct 2026 (BUILD_PLAN › Status). The phone now holds the owner's **real data** in the release app, and there is no backup (SPEC D14).
 
 - **Release app `com.jsk.routinemanager`: never uninstall it** (not with adb, not on the phone) and never clear its data. Uninstalling deletes everything.
 - **Test changes on the debug app first** (`com.jsk.routinemanager.debug`, separate data). If the owner has removed it, `./gradlew installDebug` brings it back.
@@ -20,6 +20,7 @@ All milestones M1–M13 are built. The phone now holds the owner's **real data**
   - A round launcher icon is not possible on this phone: the launcher forces its rounded square (M11, D24).
   - Parallel builders: create worktrees with `git worktree add -b <branch> .claude/worktrees/<name> main`. The Agent tool's worktree isolation deletes the worktree after a hand-back with no tracked changes.
   - The builder guard also blocks some harmless commands: `rm -rf` anywhere, `which keytool`, `git remote -v`, and commands that mention `design/` together with `tee`, `mv` or `rm`.
+  - Long phone runs (hours): start the monitor with `nohup` and keep the Mac awake with `caffeinate`. In M12 the first run stopped when the Mac restarted, and samples went missing while it slept.
 
 ## Before starting a milestone
 
