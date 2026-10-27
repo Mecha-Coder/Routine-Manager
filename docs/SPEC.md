@@ -40,7 +40,7 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 | D7 | Bedtime display | During Bedtime the screen dims and switches to the dark palette. A tap brightens it for 30 s; that first tap does nothing else. Rules in §3.2. | Adds |
 | D8 | First run | Fresh install and debug reset load the full prototype sample (`sample()`): routine and all four lists. | Confirms |
 | D9 | Low battery | When the battery is **below 15 % and not charging**, stop keeping the screen on. Rules in §3.3. | Adds |
-| D10 | Tone volume | Media audio stream (follows the phone's media volume; silent if it is 0). Other audio (podcast, music) is lowered while the tone plays. | Confirms + adds ducking |
+| D10 | Tone volume | Only the app's volume slider sets the loudness, whatever the phone's volumes are. The tone plays on the **alarm** audio stream, which the app turns up to full while the tone plays and puts back afterwards (owner decision, 27 Oct 2026, replacing the media stream: turning the phone down with the side buttons made the tone too quiet). It therefore also sounds in silent mode and Do Not Disturb. Other audio (podcast, music) is lowered while the tone plays. Rules in §3.1. | Changes (was: media stream) |
 | D11 | Notifications | None. No notification permission requested. | Confirms |
 | D12 | Debug screen | Hidden debug screen with the prototype's TEST controls, **debug builds only**. Rules in §3.6. | Confirms README suggestion |
 | D13 | Build variants | Debug builds install as a separate app, `com.jsk.routinemanager.debug`, named "Routine Manager (debug)". Test builds never touch the real app's data. The real app (`com.jsk.routinemanager`) is first installed in the last milestone. | Adds |
@@ -61,15 +61,16 @@ Measured over adb on 25 Oct 2026. The app targets this one phone.
 
 ### 3.1 Block-change tone (D4, D10)
 
-- **Trigger:** the resolved routine key changes to a **real block** while the app is visible. The key is the current block's id, the Free-time gap, or Bedtime (see README › Behaviour and system › Routine resolution). This is the prototype's `tick()` rule.
+- **Trigger:** the resolved routine key changes to a **real block** or to **Bedtime** while the app is visible. The key is the current block's id, the Free-time gap, or Bedtime (see README › Behaviour and system › Routine resolution). This is the prototype's `tick()` rule.
 - Any cause counts: time passing, a clock or time-zone change, a timetable edit (creating a block that covers "now" plays the tone), or a debug fake-clock jump.
-- Changes to Free time or Bedtime never play a tone.
+- A change to **Bedtime** plays the tone too, so the day's last block ends with a sound (owner decision, 27 Oct 2026; before, Bedtime was silent). Changes to Free time never play a tone.
 - Wait 350 ms after the change, then play only if the key is still the same.
 - **Becoming visible is not a change.** On launch, on return from another app, or when the screen comes back on, the current key becomes the baseline and nothing plays. Block starts missed while the app was hidden are never replayed.
 - **Loudness:** the handoff's WAVs are too quiet on the phone at 100 % (owner, M8). The app's OGG copies are made louder without changing their character: plain gain up to a true peak of −1 dBTP (chime ≈ −14 LUFS, pad ≈ −15.4 LUFS, about +11 dB each); the singing bowl gets plain gain only (+3.8 dB, ≈ −18.4 LUFS), because its strike leaves little headroom and a version with a limiter on the strike sounded wrong to the owner (M8). `design/` keeps the originals.
 - Plays the selected tone file once, start to end (Soft chime 10.4 s; Marimba and Steel drum about 2.2 s). A tone or preview already playing is stopped first.
 - Gain = `(volume/100)² × 0.9` (README). Moving the volume slider changes a playing tone live.
 - While the tone plays, other apps' audio is ducked (lowered), then restored.
+- **Volume independent of the phone (D10):** the tone uses the alarm stream (`USAGE_ALARM`). Just before a tone or preview starts, the app remembers the phone's alarm volume and sets it to its maximum; when the sound ends, is stopped or fails, it puts the remembered value back. So the slider gain above is the only thing that sets the loudness. Accepted risk: if the app is killed while a tone plays, the alarm volume stays at maximum.
 
 ### 3.2 Bedtime display (D7)
 
