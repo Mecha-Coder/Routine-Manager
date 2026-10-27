@@ -28,7 +28,7 @@ There are no Android Studio GUI checks (Layout Inspector, Profiler): the owner d
 | M9 Weekly timetable | Done |
 | M10 Block editor dialog | Done |
 | M11 App icon | Done |
-| M12 Release APK and install guide | Done (overnight run pending, see "Closing the project" in M12) |
+| M12 Release APK and install guide | Done |
 | M13 User guide (README) and browser demo | Done |
 
 ## Test times used below
@@ -792,11 +792,19 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
 **Install on the phone and verify**
 - [x] Release app installs and starts with the sample data.
 - [x] Keep the debug app installed: M13 needs its fake clock for screenshots.
-- [ ] **Overnight run** per SPEC §5 (replaces the 24-hour run, owner decision D20). Started Mon 26 Oct 16:36; read the results after Tue 27 Oct 06:00.
+- [x] **Overnight run** per SPEC §5 (replaces the 24-hour run, owner decision D20). Mon 26 Oct 16:36 to Tue 27 Oct 08:12: passed, see "Overnight run result" below.
 
 **Partial runs so far**
 - Mon 26 Oct 12:29–14:23 (stopped by a Mac restart): PSS 39,281 → 41,077 → 41,914 KB, 0 crashes, 0 ANRs, tones at the 12:00 and 13:00 block starts. The phone was unplugged (53 %). Log: `temp/orchestration/run24-partial-26oct/`.
 - Overnight run started Mon 26 Oct 16:36: first sample PSS 43,278 KB, 0 crashes, 0 ANRs. Phone plugged in from 16:38.
+
+**Overnight run result** (Mon 26 Oct 16:36 to Tue 27 Oct 08:12, release app, 62 samples about every 15 minutes; log `temp/orchestration/run24/`)
+- **No crash or ANR:** crash and ANR counts were 0 in every sample.
+- **Memory flat after warm-up:** 56–59 MB through the evening and Bedtime (21:01–02:37), then Android trimmed the app to about 38.5 MB at 02:52; 38.5–38.9 MB until 05:25 and 43.4–44.0 MB from 05:40 to 07:57. Short peaks (121.7 MB at 17:25) came only while the owner was testing tone previews in Settings, and fell back by 17:55.
+- **Tone at every block start:** the owner's own timetable (it differs from the sample routine) had block starts at 17:30, 19:30, 05:30 and 06:00; all four played on the minute (audio focus at 17:30:00.359, 19:30:00.422, 05:30:00.426, 06:00:00.366). The owner confirmed no block start was missed. No tone at the 23:00 Bedtime start, as SPEC §3.1 then required.
+- **Bedtime dim and back:** `mBrightnessReason=override(...MainActivity)` from 23:04 to 05:25, `automatic` again from 05:40 (first block 05:30).
+- **Date change at midnight:** the 00:05 screenshot shows "Tue 27 Oct", the Bedtime message and the dark palette.
+- **Deviations:** the app was not on screen from about 17:40 to 18:56 (the phone was locked) and the phone was unplugged 17:09–18:56, 19:45–23:00 and from 01:52 (battery 66 % at 08:13, so the keep-screen-on rule never switched off). Neither affects a pass check.
 
 **Closing the project** (after the first morning block, Tue 27 Oct 06:00)
 1. Read `temp/orchestration/run24/samples.log` and `tones.raw` and the `midnight-*.png` screenshots. Pass = every SPEC §5 item 3 check: no crash or ANR; PSS flat after warm-up; one tone per block start between 16:36 and 06:00 while the app was in front (sample routine: Mon 17:30, 18:30, 20:00, 22:30 and Tue 06:00; if the owner has changed the routine, use its block starts); `mBrightnessReason` shows the override during Bedtime (sample routine: 23:00 to 06:00) and back to normal after 06:00; the date on the midnight screenshots changes to Tue 27 Oct.
