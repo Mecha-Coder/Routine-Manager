@@ -12,9 +12,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * SPEC §3.1: the tone marks the start of a real block the user is watching, 350 ms after it starts.
- * It must never sound for Free time or Bedtime, for the state the app finds when it becomes
- * visible, or for a block that was current only for an instant.
+ * SPEC §3.1: the tone marks the start of a real block the user is watching, 350 ms after it starts,
+ * and the start of Bedtime, so the day's last block ends with a sound. It must never sound for Free
+ * time, for the state the app finds when it becomes visible, or for a block that was current only
+ * for an instant.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class BlockChimeTest {
@@ -63,17 +64,37 @@ class BlockChimeTest {
     }
 
     @Test
-    fun changesToFreeTimeOrBedtimeAreSilent() = runTest {
+    fun changesToFreeTimeAreSilent() = runTest {
+        // Free time is a pause inside the day, not a new block: a tone there would be noise.
         val plays = mutableListOf<Long>()
         val chime = chime(plays)
         chime.onRoutine(block("lunch"))
         chime.onRoutine(freeTime("lunch"))
         advanceUntilIdle()
-        chime.onRoutine(block("errands"))
-        advanceUntilIdle()
+        assertEquals(emptyList<Long>(), plays)
+    }
+
+    @Test
+    fun theEndOfTheLastBlockPlaysWhenBedtimeStarts() = runTest {
+        // Owner decision (27 Oct 2026): the day's last block ends with a sound, like every other
+        // block. With Bedtime silent, the evening's last block just ran out without a cue.
+        val plays = mutableListOf<Long>()
+        val chime = chime(plays)
+        chime.onRoutine(block("reading"))
         chime.onRoutine(RoutineState.Bedtime)
         advanceUntilIdle()
-        assertEquals("only the start of Errands", 1, plays.size)
+        assertEquals(listOf(CHIME_DELAY_MS), plays)
+    }
+
+    @Test
+    fun openingTheAppAtBedtimeIsSilent() = runTest {
+        // Becoming visible is not a change, also at night: the baseline rule covers Bedtime too.
+        val plays = mutableListOf<Long>()
+        val chime = chime(plays)
+        chime.onRoutine(RoutineState.Bedtime)
+        repeat(3) { chime.onRoutine(RoutineState.Bedtime) } // minute ticks through the night
+        advanceUntilIdle()
+        assertEquals(emptyList<Long>(), plays)
     }
 
     @Test

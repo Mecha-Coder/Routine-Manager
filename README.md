@@ -65,6 +65,7 @@ Between two blocks, the dashboard shows **Free time**, from the end of one block
 
 Before the day's first block and after its last one, the dashboard says **Bedtime, see you tomorrow**.
 
+- When the day's last block ends, the tone plays once more, so the end of the day is marked too.
 - The screen dims to a low, fixed brightness and switches to the dark colours, whatever the theme setting says.
 - To use the app at night, tap once: the first tap only brightens the screen and does nothing else, so you can't tick a to-do by accident.
 - 30 seconds after your last touch it dims again.
@@ -143,7 +144,7 @@ The gear icon next to "Lists" opens Settings.
   - **Marimba**: wooden notes, rising (about 2 seconds).
   - **Soft chime**: gentle bell notes (about 10 seconds). This is the default.
   - **Steel drum**: a bright two-note ping (about 2 seconds).
-- **Volume:** the app's own volume for the tone, 0–100 %, on top of the phone's media volume. Moving it while a tone plays changes it at once.
+- **Volume:** how loud the tone is, 0–100 %. Only this slider sets it: the phone's volume buttons don't change it. Moving it while a tone plays changes it at once.
 - **Preview sound** plays the selected tone; it turns into **Stop** while playing.
 
 <img src="docs/screenshots/09-settings.png" width="800" alt="Settings: theme, weekly timetable, three tones, volume slider and Preview sound button">
@@ -203,8 +204,8 @@ The launcher icon shows "07:05" above a progress bar. It follows the phone's dar
 
 ## Important details
 
-- **The tone plays only while the app is on screen.** There are no alarms and nothing runs in the background. A block that starts while the app is hidden or the screen is off is not announced later, and opening the app doesn't play the tone for the block already running. Free time and Bedtime are silent.
-- **The tone uses the phone's media volume.** At media volume 0 it is silent. Music or a podcast is turned down while it plays, then comes back.
+- **The tone plays only while the app is on screen.** There are no alarms and nothing runs in the background. A block that starts while the app is hidden or the screen is off is not announced later, and opening the app doesn't play the tone for the block already running. Free time is silent; the start of Bedtime plays the tone (step 3).
+- **Only the app's volume slider sets how loud the tone is.** The tone uses the phone's alarm volume, which the app turns up to full just for the tone and then puts back. So the tone also sounds in silent mode and Do Not Disturb. Music or a podcast is turned down while it plays, then comes back. If the app is force-closed in the middle of a tone, the alarm volume stays at full; set it back in the phone's sound settings.
 - **The screen stays on** while the app is open, plugged in or not.
 - **Low battery:** below 15 % and not charging, the app stops keeping the screen on, so the phone's normal screen timeout applies. Plug in and the screen stays on again within a minute.
 - **Bedtime** dims the screen and switches to the dark colours; the first tap only brightens it (step 3).
@@ -225,7 +226,7 @@ The demo is the design prototype ([design/README.md](design/README.md)). The app
 |---|---|---|
 | Testing controls | TEST bar: layout switch, Live, day and time jump, clock speed, Reset data | None. The app follows the phone's rotation and the real clock. |
 | Tones | Singing bowl, Soft chime, Warm pad, made live in the browser. Default: Singing bowl. | Marimba, Soft chime, Steel drum. Default: Soft chime. |
-| Bedtime | The "Bedtime" message only | The message, plus the dim screen, dark colours and tap-to-brighten |
+| Bedtime | The "Bedtime" message only | The message, plus the tone at its start, the dim screen, dark colours and tap-to-brighten |
 | Screen on and low battery | Not applicable | Keeps the screen on; stops below 15 % when not charging |
 | Screen | A drawn phone frame, scaled to fit the window | The phone's whole screen, keeping clear of the camera notch |
 | Where data is saved | In that browser | On the phone only |

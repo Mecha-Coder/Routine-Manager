@@ -877,3 +877,29 @@ From the sample data. Weekdays: Morning 06:00–07:00, Commute 07:00–08:00, Wo
   - Processing: ImageMagick `-resize 75% -dither None -colors 256 PNG8:` (portrait 50 %): landscape shots 1200 × 540, right-panel crops 516 × 540, left panel 708 × 540, portrait 360 × 800. 6–44 KB each.
   - `14-app-icon`: the release icon for a light and a dark phone, drawn from `res/drawable(-night)/ic_launcher_foreground.xml` and the `ic_launcher_background` colours, masked with One UI's squircle as M11's `preview2.py` does. Script in the session scratchpad (not in the repo or `temp/orchestration`), rendered with `rsvg-convert -z 2`, 960 × 500, 19.6 KB.
 - **Phone, 26 Oct:** debug Reset first, app volume 0 before any fake-clock jump, so the tones that played were silent. The app locker took focus once (M6 note); `am start` brought the app back. Afterwards `app_data.json` held the sample: 55 blocks (9 × 5 + 5 × 2), Lunch 720–780 on Mon–Fri, the sample lists. At the end: fake clock Live, then debug Reset, so light, Soft chime, 60 % with the tone baseline re-taken. App left on the live dashboard; `/sdcard/m13.xml` (the UI dumps) removed. No crashes or ANRs (`logcat -b crash`, `ANR in com.jsk`). No app code changed, so no build.
+
+---
+
+## After release: Bedtime tone and slider-only volume (27 Oct 2026)
+
+Owner decisions recorded in SPEC D10 and §3.1 (commit 8c30fe4). Not a numbered milestone.
+
+**What changed**
+- `sound/BlockChime.kt`: a change of the routine key to Bedtime (`bed`) now plays the tone, so the day's last block ends with a sound. Only Free time stays silent. The 350 ms wait and the baseline rule (becoming visible is not a change) are unchanged.
+- `sound/TonePlayer.kt`: `USAGE_ALARM` instead of `USAGE_MEDIA`. After audio focus is granted, `play()` reads `STREAM_ALARM`'s volume and sets it to `getStreamMaxVolume(STREAM_ALARM)` (flags 0, no volume panel); `stop()`, which the end, an error and focus loss all go through, puts it back once. `play()` calls `stop()` first, so the value read is always the user's, never our maximum. `setStreamVolume` is wrapped for `SecurityException` only, the one exception the API 37 `AudioManager` docs list (a change that would toggle Do Not Disturb without notification policy access); if the raise is refused, nothing is restored and the tone plays at the user's alarm volume.
+- `BlockChimeTest`: the Bedtime-is-silent test became `theEndOfTheLastBlockPlaysWhenBedtimeStarts`; `changesToFreeTimeAreSilent` keeps Free time silent; new `openingTheAppAtBedtimeIsSilent` keeps the baseline rule at night.
+- `README.md`: Bedtime step (the tone marks the end of the day), the Volume setting (only the slider sets the loudness) and two "Important details" lines (Bedtime start plays; alarm volume raised just for the tone, so it sounds in silent mode and Do Not Disturb; music still ducked; force-close mid-tone leaves the alarm volume at full).
+
+**Verification**
+- `./gradlew assembleDebug lintDebug testDebugUnitTest`: pass, 166 tests, 0 failures, 0 skipped; lint 0 errors, the 2 accepted warnings (`AndroidGradlePluginVersion`, `DataExtractionRules`).
+- Phone, debug app only (`installDebug`, uid 10332), app volume 60 %, Soft chime; the user's alarm volume was 8 of 15 (`cmd media_session volume --stream 4 --get`):
+  - Preview to the end: 8 before, 15 at +1.5 s and +5 s, 8 after; logcat `requestAudioFocus() from uid/pid 10332/… AA=USAGE_ALARM/CONTENT_TYPE_SONIFICATION`, then `setStreamVolume(stream=4, index=15)` 4 ms later; at the end `setStreamVolume(stream=4, index=8)` then `abandonAudioFocus`. No volume panel on screen (`temp/screenshot/ar-preview-playing.png`).
+  - Stop 2 s in: 15 during, 8 after.
+  - A new preview while one played (Steel drum row tapped during Soft chime): restore to 8, then focus and raise to 15, 50 ms apart; at the end 8 again, never 15.
+  - Fake clock Tue 22:54 at 60× across 23:00 (Wind down → Bedtime): focus with `USAGE_ALARM` and raise to 15; restored to 8 and focus abandoned 10.7 s later (the Soft chime's length).
+  - Paused slider jump Tue 22:52 (Wind down) → 23:10 (Bedtime): touch down 08:28:48.998, focus 08:28:49.417 (419 ms: the 350 ms wait plus touch handling, as in M8 and M8b); 8 → 15 → 8.
+  - Paused slider jump Sat 11:54 (Work Session1) → 12:09 (Free time): no focus request, alarm volume stayed 8.
+  - No crashes or ANRs (`logcat -b crash`, `ANR in com.jsk`, `FATAL EXCEPTION`, dropbox). Afterwards: fake clock Live, debug app force-stopped, release app brought to the front with `am start` (not installed over or otherwise touched).
+- Supervisor, 27 Oct: `assembleDebug lintDebug testDebugUnitTest` and `assembleRelease lintRelease` re-run: pass, 166 tests, 0 failures, 0 skipped; lint only the 2 accepted warnings. README demo table: the app's Bedtime row now names the tone at its start.
+- Release app updated with `adb install -r` at 08:32 (`firstInstallTime` still 26 Oct 11:35, so the data was kept): the owner's own blocks and lists show (1st Work 06:00–11:30, To-Do 6), no crashes or ANRs, alarm volume 8 of 15.
+- Left to the owner, by ear: loudness with the phone turned down, and the tone in silent mode and Do Not Disturb.

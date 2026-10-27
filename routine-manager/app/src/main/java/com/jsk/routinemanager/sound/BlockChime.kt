@@ -11,9 +11,10 @@ const val CHIME_DELAY_MS = 350L
 
 /**
  * When the block-change tone plays (SPEC §3.1; the prototype's `tick()`): the routine key changes
- * to a real block while the app is visible, and is still the same [CHIME_DELAY_MS] later. Free
- * time and Bedtime are silent. The first routine after creation or [rebaseline] is the baseline and
- * never plays, so becoming visible is not a change.
+ * to a real block or to Bedtime while the app is visible, and is still the same [CHIME_DELAY_MS]
+ * later. Bedtime plays so the day's last block ends with a sound; Free time is silent. The first
+ * routine after creation or [rebaseline] is the baseline and never plays, so becoming visible is
+ * not a change.
  *
  * Main thread only.
  */
@@ -30,7 +31,8 @@ class BlockChime(private val scope: CoroutineScope, private val play: () -> Unit
         if (previous == null || routine.key == previous) return
         // Any change cancels a tone still waiting, so it plays only if the key stayed the same.
         pending?.cancel()
-        pending = if (routine is RoutineState.Running && !routine.isFreeTime) {
+        val isFreeTime = routine is RoutineState.Running && routine.isFreeTime
+        pending = if (!isFreeTime) {
             scope.launch {
                 delay(CHIME_DELAY_MS)
                 play()

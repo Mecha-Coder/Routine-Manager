@@ -13,9 +13,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Plays one tone at a time on the media stream (SPEC §3.1, D10; ARCHITECTURE §7). Each play gets a
+ * Plays one tone at a time on the alarm stream (SPEC §3.1, D10; ARCHITECTURE §7). Each play gets a
  * new MediaPlayer, released when the sound ends or is stopped, so no audio memory is held between
- * chimes. While it plays, other apps' audio is ducked.
+ * chimes. While it plays, other apps' audio is ducked, and the phone's alarm volume is raised to its
+ * maximum and put back afterwards, so only the app's volume slider sets the loudness. The alarm
+ * stream also sounds in silent mode and Do Not Disturb. If the app is killed mid-tone, the alarm
+ * volume stays at maximum (accepted risk, SPEC §3.1).
  *
  * Main thread only.
  */
@@ -25,7 +28,7 @@ class TonePlayer(context: Context) {
     private val audioManager = context.getSystemService(AudioManager::class.java)
 
     private val attributes = AudioAttributes.Builder()
-        .setUsage(AudioAttributes.USAGE_MEDIA)
+        .setUsage(AudioAttributes.USAGE_ALARM)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build()
 
@@ -40,6 +43,9 @@ class TonePlayer(context: Context) {
 
     private var player: MediaPlayer? = null
 
+    /** The user's alarm volume while a tone has raised it; null when there is nothing to put back. */
+    private var userAlarmVolume: Int? = null
+
     private val isPlaying = MutableStateFlow(false)
 
     /** True from [play] until the tone ends or is stopped (the Settings Preview / Stop button). */
@@ -49,6 +55,11 @@ class TonePlayer(context: Context) {
     fun play(tone: Tone, volume: Int) {
         stop()
         if (audioManager.requestAudioFocus(focus) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) return
+        // stop() above has put back any earlier raise, so this reads the user's value, not our maximum.
+        val userVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
+        if (setAlarmVolume(audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM))) {
+            userAlarmVolume = userVolume
+        }
         val gain = toneGain(volume)
         // Not built in `apply { }`: there, `stop()` would be MediaPlayer.stop(), which keeps the
         // player and the audio focus.
@@ -77,8 +88,22 @@ class TonePlayer(context: Context) {
         val current = player ?: return
         player = null
         current.release()
+        userAlarmVolume?.let { setAlarmVolume(it) }
+        userAlarmVolume = null
         audioManager.abandonAudioFocusRequest(focus)
         isPlaying.value = false
+    }
+
+    /**
+     * Flags 0: no volume panel. Returns false if Android refused the change: its docs say it throws
+     * when the change would toggle Do Not Disturb and the app has no notification policy access. The
+     * tone then plays at the alarm volume the user set.
+     */
+    private fun setAlarmVolume(index: Int): Boolean = try {
+        audioManager.setStreamVolume(AudioManager.STREAM_ALARM, index, 0)
+        true
+    } catch (_: SecurityException) {
+        false
     }
 }
 
